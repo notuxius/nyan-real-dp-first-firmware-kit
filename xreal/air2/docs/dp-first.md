@@ -67,7 +67,7 @@ Use a direct PC USB data connection. Let DP settle, select USB with the four-sec
 
 To restore the preceding kit behavior when APP is reachable, select USB, dry-run `& $p xreal/mcu_flash.py --image air2-mcu.bin`, then manually run `& $p xreal/mcu_flash.py --image air2-mcu.bin --flash`. The same kit DP image serves both MCUs.
 
-If the MCU application cannot expose USB, the kit documents holding the button while connecting USB to enter BOOT. Confirm **Air 2 Pro BOOT PID 0x0431** before recovery. In BOOT the flasher allows only exact official stock. With the verified official MCU in place the manual recovery command is `& $p xreal/mcu_flash.py --restore --flash`. Once APP returns, you can restore the kit MCU or follow the [full vendor rollback instructions](../../../README.en.md#restore-official-xreal-air-family-firmware). After an interrupted transfer follow the kit's power-cycle procedure. Bootloader recovery has not been exercised on the DP-first test pair.
+If the MCU application cannot expose USB, the kit documents holding the button while connecting USB to enter BOOT. Confirm **Air 2 Pro BOOT PID 0x0431** before recovery. In BOOT the flasher allows only exact official stock. With the verified official MCU in place the manual recovery command is `& $p xreal/mcu_flash.py --restore --flash`. Once APP returns, you can restore the kit MCU or follow the [full vendor rollback instructions](../../../README.md#restore-official-xreal-air-family-firmware). After an interrupted transfer follow the kit's power-cycle procedure. Bootloader recovery has not been exercised on the DP-first test pair.
 
 ## Implementation and verification
 

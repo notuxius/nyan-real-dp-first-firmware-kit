@@ -1,196 +1,218 @@
 # nyan Real / Firmware Kit
 
-メガネ型ディスプレイや周辺機器の公式ファームウェアを、手元で検証付きイメージへ改修するツール。
+Tooling that turns official firmware for display glasses and peripherals into guarded, locally built images.
 
-*[English version](README.en.md)*
+*[日本語版はこちら / Japanese version](README.ja.md)*
 
-## Air 2 Pro の DP 音声優先モード（実験版フォーク）
+## DP-first audio (experimental)
 
-この [8796n/nyan-real-firmware-kit](https://github.com/8796n/nyan-real-firmware-kit) のフォークでは、**XREAL Air 2 Pro** 用の MCU ビルドを2種類追加しました。どちらも本キットで生成した Air 2 系の DP 1140 と組み合わせて使います。USB データ接続時、`--dp-first-immediate` はホストが USB アドレスを割り当てた後の最初のポーリングで DisplayPort 音声に切り替えます。`--dp-first` は約5秒待ってから切り替えます。どちらも指定しなければ従来どおりの動作です。
+The first release of this fork adds an option to switch the glasses to **DisplayPort audio automatically after power-up**. On a direct USB connection, `--dp-first-immediate` requests the switch as soon as the host assigns a USB address and the MCU next checks the route. Choose `--dp-first` to give USB about five seconds first. Both builds use the kit’s patched Air 2-family DP 1140 image. [Upstream firmware kit](https://github.com/8796n/nyan-real-firmware-kit)
 
-- **Motorola Signature** — 即時切替版を入れた1台では、接続するだけで右チャンネルの音割れが解消しました。Smart Connect は既定の「Experience Hub」を選んでいても「Mobile desktop」を起動しました。Experience Hub は手動で選べます。別の1台でも手動で DP 音声に切り替えると Mobile desktop が起動しました。
-- **ASUS の Windows PC** — 電源を切って再接続すると映像は復帰しましたが、Windows が取得した表示プロファイルには音声対応の情報がなく、メガネの再生デバイスは表示されませんでした。原因は未確認です。
-- **トラッキングと更新** — DP 音声中は USB 音声・IMU・HID 制御・VSYNC が切断されます。データ通信可能な USB 接続で **明るさ＋を4秒長押しして離す**と USB に戻せます。ASUS では MCU バージョンの読み取りと IMU の異なる32件のレポートを確認しました。アプリ内の追従動作は未確認です。
-- **画面と電源** — 切替時は画面が一時的に暗くなることがあります。手動で選んだモードは電源が切れるまで続きます。給電中のアダプターでは接続先を変えてもモードが引き継がれる場合があります。
+| Glasses | DP-first in this release |
+|---|---|
+| XREAL Air 2 Pro | Both variants are accepted by the flasher. The hardware observations below are from one pair running the immediate build. |
+| XREAL Air 2 (standard) | Shares the Pro’s stock MCU and DP images, making it a candidate for the same patch. DP-first is untested on this model and the release flasher rejects both variants for its USB product ID. |
+| XREAL Air (gen 1) | Uses different MCU and DP images. Its existing builder supports automatic DP audio on certain converters without USB data. Direct-host DP-first would require a separate gen 1 patch. |
 
-公式ファームウェアを用意して手元でビルドしてください。必要な DP イメージのハッシュと、USB 優先版に戻す手順を掲載しています。[ビルド・検証・導入・復元の手順（英語）](xreal/air2/docs/dp-first.md) · [English fork notes](README.en.md#air-2-pro-dp-first-audio-experimental-fork)
+| On the immediate build | What to expect |
+|---|---|
+| Motorola Signature | On one pair, audio played through the glasses after a cold connection without the right-channel crackle or a button press. Smart Connect opened **Mobile desktop** even with **Experience Hub** set as the default. Experience Hub was still available to select manually. Switching a second pair to DP manually also launched Mobile desktop. |
+| ASUS laptop running Windows | After a cold reconnect, the picture returned but Windows offered **no glasses audio output**. Windows reported the display profile with no audio support. The cause is unresolved. |
+| Tracking and updating | DP mode disconnects USB audio, tracking, HID control and VSYNC. On a data-capable connection, hold **Brightness + for four seconds**, then release to return to USB. On the ASUS, the updater then read the MCU version and the tracking interface delivered 32 distinct sensor reports. Tracking inside a specific app remains untested. |
+| Switching hosts | The picture can briefly go dark while the display renegotiates. The manual audio choice lasts until the glasses lose power. A powered adapter can carry that choice across a host change. |
 
-メガネ向けには、パネル本来の解像度、表示モード、音声などを **nyan Real / Spatial Wall** で
-快適に使うための改修を収録しています。周辺機器向けには、実機で再現・検証した互換性修正を
-収録します。現在はXREAL Air系メガネとMOKIN UC6101B搭載ドックに対応しています。
-Spatial Wallを使わない場合でも各ビルダーは単体で利用できます。
+Build locally from your own official firmware. The guide lists the required DP image hash, commands for both MCU variants, and how to restore USB-first behavior. [Build, verify, install and roll back](xreal/air2/docs/dp-first.md)
 
-> **nyan Real / Spatial Wall** は電気メガネで空間ディスプレイを扱うためのアプリケーションです
-> （Windows / macOS / GNOME / Raspberry Pi）。現在はマニュアルのみ先行公開で、本体は未公開です。
+## About the upstream kit
+
+For display glasses, the kit exposes panel resolution, display modes, and audio
+needed for **nyan Real / Spatial Wall**. For peripherals, it publishes reproducible,
+hardware-tested compatibility fixes. The current targets are XREAL Air-family
+glasses and a MOKIN UC6101B dock. Each builder is useful on its own even without
+Spatial Wall.
+
+> **nyan Real / Spatial Wall** is an application for using display glasses as a
+> spatial display, on Windows, macOS, GNOME and Raspberry Pi. Only its manual is
+> published so far; the application itself is not yet available.
 > → [nyan-real-spatial-wall](https://github.com/8796n/nyan-real-spatial-wall)
 
-**本プロジェクトは XREAL（旧 Nreal）、Rokid、MOKINをはじめとするいかなるメーカーとも関係がなく、
-承認も後援も受けていません。** 各社の製品名・ブランド名は、このツールが対象とする
-ハードウェアを特定する目的でのみ使用しています。メーカーのコード・ブランド・
-ファームウェアはここでは一切配布しません。
+**This project is not affiliated with, endorsed by, or connected to XREAL
+(formerly Nreal), Rokid, MOKIN, or any other manufacturer.** Product and brand names are
+used only to identify the hardware this tooling was written against. No vendor
+code, branding, or firmware is distributed here.
 
 ---
 
-## 最初に読んでください
+## Read this before anything else
 
-**このツールで生成したイメージは対象機器のファームウェアを書き換えます。壊れる可能性があります。
-そのリスクを全面的に引き受けられない場合は使わないでください。**
+**Images produced by this tooling rewrite firmware on the target device. They can break it. You accept that
+risk entirely, or you do not use it.**
 
-次の3点は同時に成り立っていて、3つとも理解する必要があります。
+Three things are true at once, and you need all three:
 
-1. **ファームウェアは一切配布しません。ベンダーのものも、パッチ済みのものもです。**
-   パッチ済みイメージは 99% 以上がベンダーのコードです。公式ファームウェアはあなた自身が
-   用意し、このリポジトリはそれをあなたの手元でパッチ済みイメージに変換します。
+1. **No firmware is distributed here — not the vendor's, and not the patched
+   result.** A patched image is over 99% vendor code. You supply the official
+   firmware yourself; this repository turns it into a patched image on your own
+   machine.
+2. **The official firmware file you obtain is your recovery path.** Keep it. Back
+   it up somewhere you will still have it in a year. If you lose it and a flash
+   goes wrong, this repository cannot help you.
+3. **Whether the device can be read back depends on the model. Do not count on
+   it.** For the XREAL Air (gen 1) it is **confirmed impossible**: static
+   analysis of the stock MCU application found no host-facing message id that
+   exposes an address-and-length read of the application or boot region, so the
+   tool cannot make a backup for you. Full firmware readback has not been
+   established for Air 2 / Air 2 Pro, and this tooling provides no backup
+   function for any supported model.
 
-2. **入手した公式ファームウェアのファイルは、あなたの復旧手段です。**
-   保管してください。1年後にも手元にある場所へバックアップしてください。それを失った状態で
-   書き込みに失敗した場合、このリポジトリにできることはありません。
+**If you use an Air (gen 1) with Nebula on an XREAL Beam Pro, do not flash the
+Air build** — it stops working.
+See [About XREAL's own apps](#about-xreals-own-apps) below.
 
-3. **本体から吸い出せるかは機種によります。当てにしないでください。**
-   XREAL Air（第1世代）については、純正 MCU アプリケーションの静的解析で
-   **読み出し不可を確認済み**です。ホストがアドレスと長さを指定してアプリ領域や
-   ブート領域を読み出せる message id は存在せず、ツール側でバックアップを取ることは
-   原理的にできません。Air 2 / Air 2 Proは完全なファームウェア読み出しの可否を未確認で、
-   本ツールはいずれの機種にもバックアップ機能を提供しません。
-
-**XREAL Air（第1世代）をBeam ProのNebulaで使うなら、Air用ビルドを書き込まないでください。
-動かなくなります。**
-詳細は[XREAL純正アプリについて](#xreal純正アプリについて)を参照してください。
-
-ベンダーのファームウェアの提供・ホスティング・ミラー・入手方法の説明は行いません。
-入手方法を尋ねる質問にも回答しません。ファームウェアのバイナリやダウンロードリンクを含む
-Issue および Pull Request は削除します。
+We do not provide, host, mirror, or explain how to obtain vendor firmware, and we
+will not answer questions asking for it. Issues and pull requests containing
+firmware binaries or download links will be removed.
 
 ---
 
-## 公式ファームウェアから変わること
+## What changes from the official firmware
 
-対応しているのはXREAL Air（第1世代）、Air 2、Air 2 Pro、およびMOKIN UC6101B搭載ドックです。
-XREAL Air系はいずれもDPブリッジとMCUを**対で更新**します。Air 2とAir 2 Proは公式イメージと
-本キットの出力を共有します。
+The supported models are the XREAL Air (gen 1), Air 2, and Air 2 Pro, plus docks
+built around the MOKIN UC6101B. Each XREAL update uses a matched **DP bridge and
+MCU pair**. Air 2 and Air 2 Pro share both official inputs and the baseline kit outputs.
 
-### XREAL Air（第1世代）
+### XREAL Air (gen 1)
 
-| 項目 | 公式ファームウェア | このビルド |
+| Area | Official firmware | This build |
 |---|---|---|
-| native RGB | not RGBのOLED経路 | native 2DとFull-SBSをRGBで表示 |
-| native解像度 | `1920x1080` | `1920x1200`をpreferred timingとして追加。`1920x1080`も利用可能 |
-| 720p | EDIDで提示しない | mode 1でtrue `1280x720@60`を広告し、公式YCbCr scaler経路でパネル全面へ拡大。固定72 / 90 / 120 Hzモードでは広告しない |
-| Full-SBS | `3840x1080` @ 60 / 72 Hz。90 Hzモードはあるが、帯域不足で正常動作しない | `3840x1200` @ 60 / 72 / 90 Hz。90 Hzも正常動作 |
-| USBデータなしの音声 | 手動切替または対応Adapter通知 | 約5秒後にLPCM対応EDIDを再公告し、保存音量でDP音声へ自動切替（暗転あり） |
-| 給電維持HDMI抜き差し | 変換器によって映像が復帰しない場合がある | 一時的な表示乱れの後、数秒で映像を自動復旧 |
-| 消費電力 | 同一timing・最低輝度（設定値0）での基準 | 約0.18–0.19 W増（+13–16%） |
+| Native RGB | Non-RGB OLED path | Displays native 2D and Full-SBS in RGB |
+| Native resolution | `1920x1080` | Adds `1920x1200` as the preferred timing; `1920x1080` remains available |
+| 720p | Not advertised in the EDID | Mode 1 advertises true `1280x720@60` and scales it to the full panel through the official YCbCr scaler path; fixed 72 / 90 / 120 Hz modes do not advertise it |
+| Full-SBS | `3840x1080` at 60 / 72 Hz; a 90 Hz mode is present but does not work correctly because the link bandwidth is insufficient | `3840x1200` at 60 / 72 / 90 Hz; 90 Hz also works correctly |
+| Audio without USB data | Manual switch or supported Adapter notification | After about five seconds, re-advertises an LPCM EDID and enters DP audio at the saved volume, with a blackout |
+| HDMI hotplug while the converter stays powered | Some converters fail to restore video | Automatically restores video within several seconds after a temporary corrupted display |
+| Power consumption | Baseline at the same timing and minimum brightness (setting 0) | About 0.18–0.19 W higher (+13–16%) |
 
-モード別の広告内容、タイミング、音声切替などの実装詳細は
-[`xreal/air/docs/design.md`](xreal/air/docs/design.md)、実機結果は
-[`xreal/air/docs/verification.md`](xreal/air/docs/verification.md)を参照してください。
-自動DP音声とHDMI抜き差し復旧は実機試験した変換器での結果で、すべての変換器との互換性は
-保証しません。またNVIDIAでpreferredより小さい解像度を真の線上信号として出すには、EDID構成
-ごとにdisplay scalingを「なし」に設定する必要があります。
+Mode tables, timing details, audio routing, and other implementation details are documented in
+[`xreal/air/docs/design.md`](xreal/air/docs/design.md) (Japanese only). Hardware
+results are in [`xreal/air/docs/verification.md`](xreal/air/docs/verification.md)
+(Japanese only).
+Automatic DP audio and HDMI-hotplug recovery are results from the tested
+converter, not a guarantee for every converter. On NVIDIA, sending a mode below
+the preferred resolution as a true wire signal also requires display scaling to
+be set to "none" for each EDID configuration.
 
 ### XREAL Air 2 / Air 2 Pro
 
-| 項目 | 公式ファームウェア | このビルド |
+| Area | Official firmware | This build |
 |---|---|---|
-| native RGB | not RGBのOLED経路 | native 2DとFull-SBSをRGBで表示 |
-| native解像度 | `1920x1080` | パネル自体が1080pのため`1920x1080`のまま |
-| 720p | EDIDで提示しない | mode 1でtrue `1280x720@60`を広告し、公式YCbCr scaler経路でパネル全面へ拡大。固定72 / 90 / 120 Hzモードでは広告しない |
-| Full-SBS | `3840x1080` @ 60 / 72 Hz。90 Hzモードはあるが、帯域不足で正常動作しない | `3840x1080` @ 60 / 72 / 90 Hz。90 Hzも正常動作 |
-| USBデータなしの音声 | 手動切替または対応Adapter通知 | 約5秒後にLPCM対応EDIDを再公告し、保存音量でDP音声へ自動切替（暗転あり） |
-| 給電維持HDMI抜き差し | 変換器によって映像が復帰しない場合がある | 復旧処理を追加。Air 2 Pro実機では一時的な表示乱れの後、数秒で自動復旧 |
-| 消費電力 | 同一timing・最低輝度（設定値0）での基準 | Air 2実測で約0.17–0.18 W増（約+14%）。Air 2 Proは未測定 |
+| Native RGB | Non-RGB OLED path | Displays native 2D and Full-SBS in RGB |
+| Native resolution | `1920x1080` | Remains `1920x1080` because the physical panel is 1080p |
+| 720p | Not advertised in the EDID | Mode 1 advertises true `1280x720@60` and scales it to the full panel through the official YCbCr scaler path; fixed 72 / 90 / 120 Hz modes do not advertise it |
+| Full-SBS | `3840x1080` at 60 / 72 Hz; a 90 Hz mode is present but does not work correctly because the link bandwidth is insufficient | `3840x1080` at 60 / 72 / 90 Hz; 90 Hz also works correctly |
+| Audio without USB data | Manual switch or supported Adapter notification | After about five seconds, re-advertises an LPCM EDID and enters DP audio at the saved volume, with a blackout |
+| HDMI hotplug while the converter stays powered | Some converters fail to restore video | Recovery logic is added; on Air 2 Pro it restores video within several seconds after a temporary corrupted display |
+| Power consumption | Baseline at the same timing and minimum brightness (setting 0) | Air 2 measured about 0.17–0.18 W higher (about +14%); Air 2 Pro was not measured |
 
-Air 2 / Air 2 Pro共通設計は[`xreal/air2/docs/design.md`](xreal/air2/docs/design.md)、
-実機確認範囲は[`xreal/air2/docs/verification.md`](xreal/air2/docs/verification.md)にあります。音声と
-hotplugの互換性は実機試験したHDMI変換器の範囲です。給電維持HDMI抜き差しのend-to-end確認は
-Air 2 Proで行い、Air 2では未確認です。
+The shared design is in [`xreal/air2/docs/design.md`](xreal/air2/docs/design.md)
+(Japanese only), and the hardware coverage is in
+[`xreal/air2/docs/verification.md`](xreal/air2/docs/verification.md) (Japanese
+only). Audio and hotplug compatibility is limited to the tested HDMI converter.
+Powered HDMI hotplug was tested end to end on Air 2 Pro, not Air 2.
 
-両表の消費電力は、Airでは`1920x1080@90`、Air 2では`1920x1080@60`をidentity出力し、
-最低輝度（設定値0）で全面black / whiteを表示したときのグラス全体のUSB入力電力です。内部回路単体の測定値ではありません。
-native RGB化を含むこのビルドのトレードオフとして、公式より消費電力が増えます。増加した入力電力の
-大部分は最終的に熱になるため、同じ使用条件では発熱も増えると想定されます。ただし、表面温度や
-内部温度の上昇量は直接測定していません。
+The power figures in both tables are whole-device USB input power with an identity
+signal (`1920x1080@90` for Air and `1920x1080@60` for Air 2), minimum brightness,
+and full-screen black or white. They are not measurements of an individual circuit.
+As a trade-off of this build, including native RGB, power consumption is higher
+than with the official firmware. Most of the additional input power ultimately
+becomes heat, so more heat generation is expected under the same conditions.
+Surface and internal temperature increases were not measured directly.
 
-### native RGB化の見え方
+### What native RGB looks like
 
-公式ファームウェアにはYCbCrと名付けられたパネル経路がありますが、内部のsubsamplingまでは
-確定していません。ここでは詳細を推定せず**not RGB**と表記します。このキットはnative 2Dと
-Full-SBSをRGB888のままOLEDへ送り、not RGBへの変換を避けます。
+The official firmware names one panel path YCbCr, but its internal subsampling
+has not been established. This README calls it **non-RGB** without guessing the
+packing. This kit keeps native 2D and Full-SBS as RGB888 all the way to the OLED.
 
-| このビルド：native RGB | 公式ファームウェア：not RGB |
+| This build: native RGB | Official firmware: non-RGB |
 |---|---|
-| ![滑らかなnative RGBグラデーション](docs/assets/gradient-rgb.png) | ![斜めに鱗状の階調境界が見えるnot RGBグラデーション](docs/assets/gradient-yuv.png) |
+| ![Smooth native-RGB gradient](docs/assets/gradient-rgb.png) | ![Non-RGB gradient with diagonal scale-shaped contours](docs/assets/gradient-yuv.png) |
 
-画像は見え方の違いを示す模式図で、パネルを撮影したものではありません。緩やかな色
-グラデーションでは斜めに連なる階調境界が減り、より滑らかに見えます。
+These are explanatory illustrations, not panel photographs. On shallow color
+gradients, the diagonal contour steps are reduced and the image looks smoother.
 
-### MOKIN UC6101B搭載ドック
+### MOKIN UC6101B dock
 
-| 項目 | 公式ファームウェア | このビルド |
+| Area | Official firmware | This build |
 |---|---|---|
-| Switch 2システムバージョン21.x | TVモードへ移行しない | 従来版でTVモード、USB-C上のDisplayPort映像の2台同時出力を実機確認 |
-| Nintendo VDM | 未認識commandを無応答で破棄 | 種別`0x20`の応答と状態リセット時パルスを追加 |
-| 23.0の純正ドックアップデートへの追従 | コマンド`0x02`への応答値`0003005F` | `0003006E`へ変更。23.0で変更後の起動を確認 |
-| VRR | 未確認 | **実動作未確認**。外部ディスプレイVRR設定の有効化のみ確認 |
-| 充電・復帰 | 基準 | 従来版で15 V / 2.6 A契約とスリープ復帰を実機確認 |
+| Switch 2 system version 21.x | Does not enter TV mode | TV mode and two simultaneous DisplayPort video outputs over USB-C verified with the previous build |
+| Nintendo VDM | Discards unknown commands without a response | Adds a type-`0x20` response and a protocol-reset pulse |
+| Following the official dock update on 23.0 | Command-`0x02` reply value `0003005F` | Changes the reply to `0003006E`; boot confirmed on 23.0 |
+| VRR | Unverified | **Actual operation unverified**; only enabling the external-display VRR setting was confirmed |
+| Charging and resume | Baseline | 15 V / 2.6 A contract and sleep resume verified with the previous build |
 
-この更新はドック応答値の変更であり、VRR実装の追加ではありません。応答値の変更がVRR設定の
-可否に影響したかも未確認です。
+This update changes a dock reply value; it adds no VRR implementation. Whether
+the reply change affected the availability of the VRR setting is also unconfirmed.
 
-このビルダーはIntel HEXを生成するだけで、書き込み機能は含みません。変更内容は
-[`peripherals/mokin/uc6101b/docs/design.md`](peripherals/mokin/uc6101b/docs/design.md)、実機確認範囲は
-[`peripherals/mokin/uc6101b/docs/verification.md`](peripherals/mokin/uc6101b/docs/verification.md)を参照してください。
+This builder only produces an Intel HEX image; it has no flashing support. See
+the [design](peripherals/mokin/uc6101b/docs/design.md) and
+[hardware verification](peripherals/mokin/uc6101b/docs/verification.md) for details.
 
 ---
 
-## 書き込み前の準備
+## Preparation before flashing
 
-### 1. 機種と公式ファイルを確認する
+### 1. Identify the model and official files
 
-ビルダーが受け付ける公式入力と、生成する固定出力は次のとおりです。ハッシュはファイルの
-入手先を示すものではなく、手元のファイルが検証済みの基準と同一か確認するためのものです。
+The builders accept the official inputs below and produce fixed outputs. The
+hashes do not identify a download source; they only prove that your files match
+the reviewed baseline.
 
-| 機種 | 対象 | 公式ファイル | 公式入力SHA-256 | 出力SHA-256 |
+| Model | Component | Official file location | Official input SHA-256 | Output SHA-256 |
 |---|---|---|---|---|
-| Air（第1世代） | DP | `firmware/1140` | `66A28C7BE1842D6837C68A5586CB0465099787F421427BE0CBE9691C858837DA` | `34AEE893AC697D314CB522D135AAE8C9222CC9461B62C096C616FEF44DE87AD8` |
-| Air（第1世代） | MCU | `firmware/07.1.02.387_20240428.bin` | `B1784C6D618D3CF6F03D77A93442C3267A425CB2BE415E8912539E165645A3E7` | `F292B1245F2F26E209D6DACA6ADF50A58534B4EAEDC48C4FC8705703C879223D` |
+| Air (gen 1) | DP | `firmware/1140` | `66A28C7BE1842D6837C68A5586CB0465099787F421427BE0CBE9691C858837DA` | `34AEE893AC697D314CB522D135AAE8C9222CC9461B62C096C616FEF44DE87AD8` |
+| Air (gen 1) | MCU | `firmware/07.1.02.387_20240428.bin` | `B1784C6D618D3CF6F03D77A93442C3267A425CB2BE415E8912539E165645A3E7` | `F292B1245F2F26E209D6DACA6ADF50A58534B4EAEDC48C4FC8705703C879223D` |
 | Air 2 / Air 2 Pro | DP | `firmware/air2/1140` | `350BACE369A83823D8EF867AE04AD07CF64D724C10EC7CEECFB83861AC9672F3` | `46556947E81DD7EBBD7F26B2541B63E0362804C166C020639DA908D2ABB2F486` |
 | Air 2 / Air 2 Pro | MCU | `firmware/air2/09.1.00.180_20240507.bin` | `C07633E97215346468A18F5306A10F800388A80CCD7DCFE800D468F4AB1BFD49` | `950CA9535AFBD02C40D97A167DB06ECFAEEBC35F6ADCCDED81829CC44A8BE4C9` |
 | MOKIN UC6101B | Intel HEX | `firmware/peripherals/mokin/uc6101b/XL_UC6101B_LT8712SX_Cto2DP+PD_V000612__20250724_CKS_0x1152B5C_WithPDtoC.HEX` | `BE3C7FD831B7D3C1C6D822D70C72EACF2DA21958E03C6448A9857DB6D762AA7D` | `AD718ED4B90948414EA24D3D1FAD77CE16493BF343B283B8FD76E212737FE108` |
 
-公式ファイルは上表の場所へ置き、別の安全な場所にもバックアップしてください。`firmware/`は
-gitignoreされており、中身がこのリポジトリへコミットされることはありません。
+Put the official files at those paths and keep another backup somewhere safe.
+`firmware/` is gitignored, so its contents cannot be committed to this repository.
 
-### 2. Pythonと依存パッケージを用意する
+### 2. Install Python and dependencies
 
-Python 3.10以降を使います。ビルダーは標準ライブラリだけで動きます。書き込み、表示モード操作、
-VSYNC、レジスタ診断などUSB HIDを使うツールには`hidapi`が必要です。
+Use Python 3.10 or later. The builders use only the standard library. USB HID
+tools for flashing, display-mode control, VSYNC, and register diagnostics require
+`hidapi`.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-PyPIには`import hid`を提供する別パッケージもあります。必要なのはコンパイル済みbindingを含む
-`hidapi`です。別の`hid`パッケージを同時に入れないでください。
+PyPI also has a different package that provides `import hid`. Install `hidapi`,
+which includes compiled bindings, and do not install both packages together.
 
-### 3. 対応OSとUSB接続を確認する
+### 3. Check the operating system and USB connection
 
-実機書き込みを検証したOSはWindowsです。純粋なPythonのビルダーはLinux / macOSでも動きます。
-HIDツールも動作する見込みですが未検証です。Windows専用の表示診断もあります。
+Hardware flashing was verified on Windows. The pure-Python builders work on
+Linux and macOS. HID tools are expected to work there but have not been tested.
+Some display diagnostics are Windows-only.
 
-| 処理 | Windows | Linux / macOS |
+| Operation | Windows | Linux / macOS |
 |---|---|---|
-| DP / MCUイメージのビルド | 対応 | 対応 |
-| UC6101B Intel HEXのビルド | 対応 | 対応 |
-| DP / MCUの書き込み | 対応・実機確認済み | 未検証 |
-| HID表示・レジスタ診断 | 対応 | 未検証 |
-| EDID取得、Windows線上信号の確認 | 対応 | 非対応 |
+| Build DP / MCU images | Supported | Supported |
+| Build the UC6101B Intel HEX image | Supported | Supported |
+| Flash DP / MCU images | Supported and hardware-verified | Untested |
+| HID display and register diagnostics | Supported | Untested |
+| EDID capture and Windows wire-signal inspection | Supported | Not supported |
 
-`xreal/display.py --probe`はWindows専用の`edid_dump.py`を呼ぶため、Linux / macOSでは使えません。
-通常のモード取得・切替はHID表示ツールとして未検証です。
+`xreal/display.py --probe` invokes the Windows-only `edid_dump.py`, so that
+option does not work on Linux or macOS. Normal mode reads and changes remain
+untested HID operations there.
 
-書き込み時は対象グラスをPCへ直接USB接続し、他のXREAL / Nreal HID機器を外してください。
-Linuxではrootを使うか、次のudev ruleなどで`hidraw`へのアクセスを許可します。
+Connect only the target glasses directly to the PC before flashing. Disconnect
+other XREAL or Nreal HID devices. On Linux, run as root or grant `hidraw` access,
+for example:
 
 ```text
 # /etc/udev/rules.d/70-xreal.rules
@@ -199,49 +221,51 @@ SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3318", MODE="0666"
 
 ---
 
-## スクリプトの役割
+## What each script does
 
-### イメージを作る
+### Build images
 
-| スクリプト | 対象 | ハードウェアへの書き込み |
+| Script | Target | Writes hardware |
 |---|---|---|
-| `xreal/air/build_dp.py` | Air（第1世代）のDPイメージ | しない |
-| `xreal/air/build_mcu.py` | Air（第1世代）のMCUイメージ | しない |
-| `xreal/air2/build_dp.py` | Air 2 / Air 2 Pro共通DPイメージ | しない |
-| `xreal/air2/build_mcu.py` | Air 2 / Air 2 Pro共通MCUイメージ | しない |
-| `peripherals/mokin/uc6101b/build.py` | UC6101B Intel HEX | しない |
+| `xreal/air/build_dp.py` | Air (gen 1) DP image | No |
+| `xreal/air/build_mcu.py` | Air (gen 1) MCU image | No |
+| `xreal/air2/build_dp.py` | Shared Air 2 / Air 2 Pro DP image | No |
+| `xreal/air2/build_mcu.py` | Shared Air 2 / Air 2 Pro MCU image | No |
+| `peripherals/mokin/uc6101b/build.py` | UC6101B Intel HEX image | No |
 
-各ビルダーは公式入力のSHA、全パッチ位置のbefore byte、生成後のSHA、機器固有のCRCまたは
-checksum、変更範囲を検査します。想定外の入力や結果は拒否し、`--force`はありません。
+Each builder checks the official input SHA, every patch site's before bytes, the
+resulting SHA, device-specific CRCs or checksums, and the complete change range.
+Unexpected inputs or outputs are rejected. There is no `--force` option.
 
-### XREAL Air系のイメージを書き込む
+### Flash XREAL Air-family images
 
-| スクリプト | 役割 | 書き込み条件 |
+| Script | Purpose | When it writes |
 |---|---|---|
-| `xreal/dp_flash.py` | DPブリッジの確認・書き込み・純正復旧 | `--flash`を付けた場合だけ送信 |
-| `xreal/mcu_flash.py` | MCUの検証・書き込み・純正復旧 | `--flash`を付けた場合だけ送信 |
+| `xreal/dp_flash.py` | Inspect, flash, or restore the DP bridge | Only with `--flash` |
+| `xreal/mcu_flash.py` | Verify, flash, or restore the MCU | Only with `--flash` |
 
-両ツールは接続中のUSB PIDと機種、既知イメージの正確なSHA、project code、コンテナ検査、
-対応する純正復旧ファイルを照合します。Air 2とAir 2 Proはproject codeを共有しますが、USB PIDは
-別々に確認します。判定を無効化するオプションはありません。
+Both tools bind the connected USB PID and model to exact known-image hashes,
+validate the project code and container, and require the matching official
+recovery image. Air 2 and Air 2 Pro share a project code, but their USB PIDs are
+still checked separately. There is no bypass option.
 
-### 状態を確認する
+### Inspect state
 
-| スクリプト | 内容 | 純正ファームウェア |
+| Script | Purpose | Works on stock firmware |
 |---|---|---|
-| `common/display_signal.py` | Windowsのデスクトップ解像度と線上信号を分けて表示 | 使用可 |
-| `xreal/edid_dump.py` | ホストが受け取ったEDIDを取得・デコード | 使用可 |
-| `xreal/display.py` | Air系の論理表示モードを取得・切替 | 使用可 |
-| `xreal/vsync.py` | パネルVSYNCを実測 | 使用可 |
-| `xreal/dpreg.py` | DPブリッジのレジスタを読む | 本キットのMCUが必要 |
-| `xreal/panelreg.py` | パネルレジスタを読み書きする | 本キットのMCUが必要 |
+| `common/display_signal.py` | Separates Windows desktop resolution from the active wire signal | Yes |
+| `xreal/edid_dump.py` | Captures and decodes the EDID received by the host | Yes |
+| `xreal/display.py` | Reads or changes Air-family logical display modes | Yes |
+| `xreal/vsync.py` | Measures panel VSYNC | Yes |
+| `xreal/dpreg.py` | Reads DP bridge registers | Requires this kit's MCU |
+| `xreal/panelreg.py` | Reads or writes panel registers | Requires this kit's MCU |
 
-`display.py`はモード切替時にHPDをトグルするため数秒暗転します。`panelreg.py`の書き込み先は
-パネルのRAMで、電源を入れ直すと元へ戻ります。
+`display.py` toggles HPD during a mode change, causing a short blackout.
+`panelreg.py` writes panel RAM, so a full power cycle restores those values.
 
 ---
 
-## MOKIN UC6101Bイメージを作る
+## Build the MOKIN UC6101B image
 
 ```bash
 python peripherals/mokin/uc6101b/build.py \
@@ -249,195 +273,215 @@ python peripherals/mokin/uc6101b/build.py \
   --out uc6101b-switch2.hex
 ```
 
-この処理はハードウェアへアクセスしません。書き込み前に出力SHAが準備表と一致することを確認し、
-公式イメージを復旧用に保管してください。詳しい使い方と書き込み時の注意は
-[`peripherals/mokin/uc6101b/README.md`](peripherals/mokin/uc6101b/README.md)にあります。
+This command never accesses hardware. Confirm the output SHA against the table
+and keep the official image as your recovery path before flashing. See the
+[UC6101B instructions](peripherals/mokin/uc6101b/README.md) for details.
 
 ---
 
-## XREAL Air系のビルドから書き込みまで
+## Build and flash XREAL Air-family images
 
-DPとMCUは必ず同じ機種向けの組を使ってください。以下はリポジトリのルートで実行します。
+Always use a DP and MCU pair for the same model. Run these commands from the
+repository root.
 
-### 1. パッチ済みイメージを生成する
+### 1. Generate patched images
 
-Air（第1世代）：
+Air (gen 1):
 
 ```bash
 python xreal/air/build_dp.py  --src firmware/1140                     --out air-dp.bin
 python xreal/air/build_mcu.py --src firmware/07.1.02.387_20240428.bin --out air-mcu.bin
 ```
 
-Air 2 / Air 2 Pro：
+Air 2 / Air 2 Pro:
 
 ```bash
-python xreal/air2/build_dp.py  --src firmware/air2/1140                         --out air2-dp.bin
-python xreal/air2/build_mcu.py --src firmware/air2/09.1.00.180_20240507.bin     --out air2-mcu.bin
+python xreal/air2/build_dp.py  --src firmware/air2/1140                     --out air2-dp.bin
+python xreal/air2/build_mcu.py --src firmware/air2/09.1.00.180_20240507.bin --out air2-mcu.bin
 ```
 
-生成せず検証だけ行う場合は`--check-only`を使います。
+Use `--check-only` to build and validate in memory without writing a file.
 
 ```bash
 python xreal/air/build_dp.py --src firmware/1140 --check-only
 ```
 
-既に生成したファイルが決定論的な出力と完全一致するかは`--verify`で確認できます。
+Use `--verify` to prove that an existing file is byte-identical to the
+deterministic output.
 
 ```bash
 python xreal/air/build_dp.py --src firmware/1140 --verify air-dp.bin
 ```
 
-### 2. 書き込み前にイメージを検査する
+### 2. Inspect the images before flashing
 
-DPツールを引数なしで実行すると、接続中の機種と動作中のDP版数だけを読みます。何も書きません。
+Running the DP tool without arguments only identifies the connected model and
+reads the running DP version. It writes nothing.
 
 ```bash
 python xreal/dp_flash.py
 ```
 
-生成したイメージも`--flash`なしで検査できます。
+You can inspect generated images without `--flash`:
 
 ```bash
 python xreal/dp_flash.py  --image air-dp.bin
 python xreal/mcu_flash.py --image air-mcu.bin --verify-only
 ```
 
-Air 2 / Air 2 Proではファイル名を`air2-dp.bin`、`air2-mcu.bin`へ読み替えてください。ここで表示される
-機種、SHA、CRC、DP bank tagが準備表と一致しなければ書き込みへ進まないでください。
+For Air 2 or Air 2 Pro, substitute `air2-dp.bin` and `air2-mcu.bin`. Do not
+continue unless the reported model, SHA, CRC, and DP bank tag match the
+preparation table.
 
-### 3. 機種ごとの順序で書き込む
+### 3. Flash in the model-specific order
 
-#### Air（第1世代）：DP → MCU
+#### Air (gen 1): DP, then MCU
 
 ```bash
 python xreal/dp_flash.py  --image air-dp.bin  --flash
 python xreal/mcu_flash.py --image air-mcu.bin --flash
 ```
 
-#### Air 2 / Air 2 Pro：MCU → DP
+#### Air 2 / Air 2 Pro: MCU, then DP
 
 ```bash
 python xreal/mcu_flash.py --image air2-mcu.bin --flash
 python xreal/dp_flash.py  --image air2-dp.bin  --flash
 ```
 
-`--flash`を付けた呼び出しだけが実際に送信します。転送中はケーブルを抜かず、PCをスリープさせないで
-ください。DPはFINISH後に自分で再起動し、MCUはbootloader経由でAPPへ復帰するため、正常終了後の
-抜き差しは不要です。
+Only calls carrying `--flash` send an update. Do not disconnect the cable or let
+the PC sleep during transfer. The DP bridge restarts itself after FINISH, and
+the MCU returns to its application through the bootloader, so a successful
+write does not require a replug.
 
-### 4. 書き込み後を確認する
+### 4. Check the result
 
-もう一度`python xreal/dp_flash.py`を実行し、DP版数が`1140`であることを確認します。`1109`なら
-fallbackへ落ちているため、[うまくいかなかったとき](#うまくいかなかったとき)を参照してください。
+Run `python xreal/dp_flash.py` again. The DP version should be `1140`. Version
+`1109` means the bridge entered its fallback image; see
+[If something goes wrong](#if-something-goes-wrong).
 
-表示は普段使う解像度、リフレッシュ、Full-SBS、音声経路で確認してください。表示信号やEDIDを
-記録する場合は前節の診断スクリプトを使います。コンテナの版数文字列は公式のままなので、
-改造済みかどうかは生成SHAと手元の記録で管理してください。
+Test the resolutions, refresh rates, Full-SBS modes, and audio route you plan to
+use. Use the diagnostic scripts above to record the active signal or EDID. The
+container version string remains the official one, so track the modified state
+with the generated SHA and your own records.
 
 ---
 
-## XREAL Air系を純正へ戻す
+## Restore official XREAL Air-family firmware
 
-最初に保存した純正ファイルが準備表の場所に必要です。対応グラスだけを直接USB接続し、MCUを先、
-DPを後の順に戻します。
+The official files you saved must be at the paths in the preparation table.
+Connect only the target glasses, then restore the MCU first and the DP bridge
+second:
 
 ```bash
 python xreal/mcu_flash.py --restore --flash
 python xreal/dp_flash.py  --restore --flash
 ```
 
-純正復旧イメージのSHAと接続中のPIDも、通常の書き込みと同じ基準で検査されます。
+Recovery images are checked against the connected PID and the same fixed-hash
+policy used for normal updates.
 
 ---
 
-## XREAL純正アプリについて
+## About XREAL's own apps
 
-**XREAL Air（第1世代）をBeam ProのNebulaで使うなら、Air用ビルドを書き込まないでください。
-動かなくなります。**
+**If you use an Air (gen 1) with Nebula on an XREAL Beam Pro, do not flash the
+Air build. It stops working.**
 
-Nebulaのようにグラスへ映像を出すアプリは、レンズの歪みを打ち消す補正をかけて描画します。
-その補正データは1080p分しかありません。Air用ビルドは1200pをpreferred timingにするため、
-Beam Pro版Nebulaは起動画面から先へ進みません。実機で確認済みで、純正へ戻す以外の回避策は
-ありません。通常の外部ディスプレイとして使う場合は問題ありません。
+Apps such as Nebula render with a correction that cancels lens distortion. The
+required correction data exists only for 1080p. The Air build makes 1200p the
+preferred timing, so Beam Pro Nebula cannot proceed past its startup screen.
+This is hardware-verified, and restoring official firmware is the only remedy.
+Normal use as an uncorrected external display is unaffected.
 
-このビルドはコンテナヘッダの版数を変えないため、NebulaやBeam Proが自動的に純正へ戻すことも
-ありません。
+The build does not change the container version, so Nebula or Beam Pro will not
+silently restore official firmware either.
 
-Air 2 / Air 2 Proはpreferred timingを`1920x1080`から変更せず、どちらもXREAL Beam Proで
-通常動作することを実機確認済みです。
+Air 2 / Air 2 Pro keep `1920x1080` as the preferred timing, and both have been
+hardware-tested for normal operation with XREAL Beam Pro.
 
-USBデータを運ばないHDMI変換経路では、自動DP音声の完全切替後にUSB複合デバイスが閉じます。
-対象接続には最初からUSBデータ経路がないためHID制御はできません。USB対応ホストへつなぎ直すと
-戻ります。
-
----
-
-## なぜ生成結果を確認できるのか
-
-ビルダーは単にパッチを当てるだけでなく、次を毎回検証します。
-
-- 公式入力のSHA-256、project code、コンテナCRC
-- ラベル付き変更レコードのbefore byteと変更範囲
-- 決定論的な出力SHA-256、コンテナCRC、DP bank0 commit tag、変更バイト数
-- 生成EDIDのchecksum、DTD / VIC、論理モードごとの広告内容
-- Air DPの8051 helper全状態ベクタ、Air 2系DPのEDID / RGB profile contract
-- MCU側の表示・復旧policy model
-- UC6101BのIntel HEX record、Block 1 CRC-8、image checksum、変更アドレス集合
-
-実機の詳細は各機種の`docs/verification.md`にあります。
-共通仕様は[コンテナ形式](docs/container-format.md)と
-[HIDプロトコル](docs/hid-protocol.md)を参照してください。
+On HDMI converter paths with no USB data, the full automatic DP-audio transition
+closes the USB composite device. That connection did not have a USB data path in
+the first place, so HID control is unavailable until the glasses are reconnected
+to a USB-capable host.
 
 ---
 
-## XREAL Air系でうまくいかなかったとき
+## How the generated result is verified
 
-**別機種イメージを選んだ。** フラッシャーはUSB PIDと固定SHAの組が一致しなければ送信を拒否します。
-判定を回避せず、接続中の機種とファイル名を確認してください。
+The builders do more than apply patches. Every run verifies:
 
-**DPがfallbackイメージで起動した。** 症状はDP版数`1109`、モニタ名`nreal air`、60 Hz固定、
-モード切替不能です。bank0が拒否されていますが復旧可能です。正常な対応DPイメージ、または
-`--restore`で純正DPを書き直してください。
+- the official input SHA-256, project code, and container CRC;
+- every labelled change record's before bytes and allowed range;
+- the deterministic output SHA-256, container CRC, DP bank0 tag, and changed-byte count;
+- generated EDID checksums, DTDs, VICs, and per-mode advertisement contracts;
+- all Air DP 8051 helper state vectors;
+- the Air 2-family DP EDID and RGB-profile contracts; and
+- the MCU display and recovery policy models; and
+- UC6101B Intel HEX records, Block 1 CRC-8, image checksum, and changed-address set.
 
-**MCU APPが起動しない。** USBの接続と切断を繰り返す場合は、ボタンを保持しながらUSB接続して
-bootloaderへ入り、保存した純正MCUを`--restore --flash`で戻してください。
-
-**転送が中断した、FINISHが異常statusを返した。** 同じ電源状態で再試行せず、一度抜き差しして
-MCUをリセットしてからやり直してください。正常に完了した場合は抜き差し不要です。
+Detailed hardware results live in each model's `docs/verification.md`.
+See [the container format](docs/container-format.en.md) and
+[the HID protocol](docs/hid-protocol.en.md) for the shared technical details.
 
 ---
 
-## リポジトリ構成
+## If something goes wrong with an XREAL Air-family device
+
+**You selected an image for another model.** The flasher refuses to send unless
+the USB PID and fixed image SHA are an approved pair. Do not bypass the check;
+verify the connected model and filename.
+
+**The DP bridge starts its fallback image.** Symptoms are DP version `1109`,
+monitor name `nreal air`, a fixed 60 Hz mode, and dead mode switching. The bank0
+image was rejected, but this is recoverable. Flash the correct DP output again,
+or restore the official DP image with `--restore`.
+
+**The MCU application does not start.** If USB repeatedly connects and
+disconnects, hold the button while connecting USB to enter the bootloader, then
+restore the saved official MCU with `--restore --flash`.
+
+**Transfer stopped or FINISH returned an error.** Do not retry in the same power
+state. Disconnect and reconnect once to reset the MCU, then retry. A normally
+completed write does not need a replug.
+
+---
+
+## Repository layout
 
 ```text
-xreal/          XREAL Air系のHID、書き込み、診断ツール
-  air/          Air（第1世代）のビルダーと設計・検証文書
-  air2/         Air 2 / Air 2 Pro共通のビルダーと設計・検証文書
-peripherals/    ドック、変換器など周辺機器のビルダーと設計・検証文書
-common/         機種非依存の表示診断
-docs/           コンテナ形式、HIDプロトコル、共通資料
-firmware/       利用者が用意した公式ファイルの置き場所（gitignore）
+xreal/          XREAL Air-family HID, flashing, and diagnostic tools
+  air/          Air (gen 1) builders and design/verification documents
+  air2/         Shared Air 2 / Air 2 Pro builders and documents
+peripherals/    Builders and design/verification documents for docks and adapters
+common/         Model-independent display diagnostics
+docs/           Container format, HID protocol, and common references
+firmware/       Your official input files; gitignored
 ```
 
-表にない機種とファームウェア版は対象外です。似た型番や同じVIDを持つ別系統の機種へ流用しないでください。
+Models and firmware versions not listed above are unsupported. Do not reuse an
+image on a similar model or another product with the same USB vendor id.
 
 ---
 
-## ライセンス
+## License
 
-本リポジトリのコードとドキュメントは[Apache License 2.0](LICENSE)の下で提供されます。
+Repository code and documentation are licensed under the
+[Apache License 2.0](LICENSE).
 
-このライセンスは、ツールが操作対象とするベンダーのファームウェアには及びません。当該
-ファームウェアは権利者に帰属し、いかなる形でも本リポジトリには含まれていません。
+That license does not cover vendor firmware processed by these tools. The
+firmware remains the property of its rights holder and is not included here in
+any form.
 
 ---
 
-## コントリビュート
+## Contributing
 
-対応機種でのバグ報告と実機検証結果、および検証可能な新機種対応を歓迎します。とくに未検証の
-OS・ホスト環境からの報告と、各機種の`docs/verification.md`と違う値が出たケースは貴重です。
+Bug reports and hardware results from supported models, as well as verifiable
+support for new devices, are welcome. Results from untested operating systems or
+hosts and values that differ from a model's `docs/verification.md` are especially useful.
 
-**ファームウェアのバイナリ、ダウンロードリンク、およびそれらを求める投稿はしないでください。**
-該当するIssueやコメントは議論なく削除します。
+**Do not post firmware binaries, download links, or requests for them.** Such
+issues and comments will be removed without discussion.
 
-詳細は[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
