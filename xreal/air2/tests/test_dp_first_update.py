@@ -11,12 +11,20 @@ class UpdateTests(unittest.TestCase):
         model = mcu_flash.AIR2_PRO
         self.app = mcu_flash.Connection(model, model.app_pid, "unused", 4, "test-pair")
         self.boot = mcu_flash.Connection(model, model.boot_pid, "unused", 0, "")
-        self.image = mcu_flash.air2_build.build_dp_first(
-            mcu_flash.air2_build.build(model.stock.read_bytes())
-        )
+        self.baseline = mcu_flash.air2_build.build(model.stock.read_bytes())
+        self.image = mcu_flash.air2_build.build_dp_first(self.baseline)
         self.info = mcu_flash.check_image(self.image)
 
     def test_retry_only_app_check_after_completed_transfer(self):
+        self.check_app_retry(self.image, self.info)
+
+    def test_immediate_dp_retry_only_app_check_after_completed_transfer(self):
+        image = mcu_flash.air2_build.build_dp_first(self.baseline, immediate=True)
+        info = mcu_flash.check_image(image)
+        self.assertEqual(info.models, {"air2pro"})
+        self.check_app_retry(image, info)
+
+    def check_app_retry(self, image, info):
         model = self.app.model
         with (
             patch.object(mcu_flash, "unique_connection", return_value=self.app),
@@ -28,8 +36,8 @@ class UpdateTests(unittest.TestCase):
             patch.object(mcu_flash.time, "sleep"),
         ):
             open_device.return_value.app_version.return_value = model.version
-            mcu_flash.flash(self.image, self.info, self.app)
-            transfer.assert_called_once_with(self.boot, self.image, self.info)
+            mcu_flash.flash(image, info, self.app)
+            transfer.assert_called_once_with(self.boot, image, info)
             self.assertEqual([args.args[1] for args in wait.call_args_list],
                              [model.boot_pid, model.app_pid, model.app_pid])
             self.assertEqual(open_device.return_value.app_version.call_count, 2)

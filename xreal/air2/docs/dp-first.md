@@ -4,6 +4,29 @@ This experimental MCU image targets a single Air 2 Pro using the kit's published
 
 After DP audio starts, hold **Brightness +** for four seconds and release to select USB audio and restore the composite USB device. The IMU, HID control, VSYNC and application updater depend on that device. Reopen an app that lost its connection. Hold the same button again to return to DP audio. A cold reconnect rearms the preference. If a powered adapter keeps the MCU running through a source change, the current choice lasts for that power session. Switching to USB on a power-only connection still requires a USB data cable and host for those interfaces to work.
 
+## Immediate DP on a direct Motorola or ASUS connection
+
+Choose `--dp-first-immediate` to request the stock DP transition on the **first policy poll after USB SET_ADDRESS**. This removes the five-second startup grace period on a direct USB data connection. USB addressing, EDID renegotiation and the stock amplifier startup still take time. On a connection without USB addressing the existing converter timeout, retraining and saved-gain handling still apply. An address of zero alone cannot distinguish a slow USB host from a power-only adapter.
+
+Compared with the five-second DP-first image, this revision changes one payload byte at MCU container offset `0x1DC5A` and four CRC bytes. The Thumb instruction compares the incremented addressed-host counter with 1 instead of 166. The session latch, both route checks, the four-second key, and the MCU/DP update handlers are byte-identical. The prior five-second image was successfully flashed on the first pair, and the ASUS read its MCU and DP versions after the button restored HID. Those hardware observations apply only to that earlier image.
+
+From the repository root, build or verify the immediate image offline:
+
+```powershell
+$p = '.\.venv\Scripts\python.exe'
+$stock = 'firmware/air2/09.1.00.180_20240507.bin'
+$image = 'air2-pro-mcu-dp-first-immediate.bin'
+& $p xreal/air2/build_mcu.py --src $stock --dp-first-immediate --out $image
+& $p xreal/air2/build_mcu.py --src $stock --dp-first-immediate --verify $image
+& $p xreal/mcu_flash.py --image $image --verify-only
+```
+
+For a one-pair upgrade from the five-second variant, keep the second pair unplugged. Connect the first pair directly to the ASUS, let its present DP mode settle, then hold Brightness + for four seconds to get USB. Follow the installation steps below with `$image` set to the **immediate** file above. After FINISH and JUMP_TO_APP, the fast transition may hide USB before Windows can read the version. Keep the cable connected. If the flasher prompts, hold Brightness + for four seconds once DP is active. It retries the APP check and version read only.
+
+Test three cold reconnects to the Motorola with the same stereo clip, then check that one four-second hold on the ASUS restores the APP version read and actual tracking. After testing, the previous five-second behavior can be restored in APP mode using the same dry run and manual flash procedure with `air2-pro-mcu-dp-first.bin`. BOOT recovery still requires the exact official stock MCU.
+
+All 20 offline tests and both flasher self-tests passed. The immediate image matched a separate rebuild and passed the flasher's exact-image verification. Hardware startup time, audible playback, tracking and update recovery on the immediate revision still await measurement on the first pair.
+
 ## Build or verify on Windows
 
 Run PowerShell from the repository root. The provided checkout has the verified official inputs in `firmware/air2`, the published baseline images, and a local Python environment. In a fresh checkout, follow the [Windows environment setup and official input hash table](motorola-audio.md#windows-build-and-offline-verification) first. Keep a separate copy of the official files.
@@ -23,6 +46,7 @@ $image = 'air2-pro-mcu-dp-first.bin'
 | Image | SHA-256 | Container CRC |
 |---|---|---|
 | Experimental DP-first MCU | `39819E2083911E59AEA844EE484DB52DE8B5B0C9A49BD7EC317DF80F7BD521E3` | `0x29CB1C30` |
+| Immediate DP-first MCU | `DCF383BE0684FB0EBC6126CA1AD031594DB4D77F9B16BE6D5C248EA69F5769ED` | `0xCEE99416` |
 | Kit USB-first MCU for rollback | `950CA9535AFBD02C40D97A167DB06ECFAEEBC35F6ADCCDED81829CC44A8BE4C9` | `0xCFB740BE` |
 | Kit DP 1140 used with both MCUs | `46556947E81DD7EBBD7F26B2541B63E0362804C166C020639DA908D2ABB2F486` | `0xA86203B1` |
 

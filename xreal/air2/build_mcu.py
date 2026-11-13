@@ -36,6 +36,8 @@ OUTPUT_CRC = 0xCFB740BE
 EXPECTED_DIFFS = 526
 DP_FIRST_SHA256 = "39819E2083911E59AEA844EE484DB52DE8B5B0C9A49BD7EC317DF80F7BD521E3"
 DP_FIRST_CRC = 0x29CB1C30
+IMMEDIATE_DP_SHA256 = "DCF383BE0684FB0EBC6126CA1AD031594DB4D77F9B16BE6D5C248EA69F5769ED"
+IMMEDIATE_DP_CRC = 0xCEE99416
 
 EXPECT_LENGTH = 0x24E70
 EXPECT_PROJECT = 0x0900
@@ -256,7 +258,7 @@ DP_FIRST_RECORDS: tuple[Record, ...] = (
 )
 
 
-def build_dp_first(baseline: bytes) -> bytes:
+def build_dp_first(baseline: bytes, *, immediate: bool = False) -> bytes:
     """Derive the Pro-only variant from the byte-exact, already verified public build."""
     if sha256(baseline) != OUTPUT_SHA256:
         fail("DP-first requires the exact published MCU output")
@@ -267,6 +269,13 @@ def build_dp_first(baseline: bytes) -> bytes:
         out[offset:offset + len(new)] = new
     if fix_container_crc(out) != DP_FIRST_CRC or sha256(out) != DP_FIRST_SHA256:
         fail("DP-first output differs from its pinned CRC or SHA-256")
+    if immediate:
+        # Addressed-host path only. CMP r4,#1 after the poll increment, formerly #166.
+        if out[0x1DC5A:0x1DC5C] != hx("a62c"):
+            fail("immediate DP guard mismatch at 0x1DC5A")
+        out[0x1DC5A:0x1DC5C] = hx("012c")
+        if fix_container_crc(out) != IMMEDIATE_DP_CRC or sha256(out) != IMMEDIATE_DP_SHA256:
+            fail("immediate DP output differs from its pinned CRC or SHA-256")
     image = bytes(out)
     validate_container(image, "DP-first MCU")
     return image
@@ -423,8 +432,11 @@ def main() -> None:
     parser.add_argument("--out", type=Path, metavar="FILE")
     parser.add_argument("--check-only", action="store_true")
     parser.add_argument("--verify", type=Path, metavar="FILE")
-    parser.add_argument("--dp-first", action="store_true",
-                        help="build the experimental Air 2 Pro DP-first audio variant")
+    audio = parser.add_mutually_exclusive_group()
+    audio.add_argument("--dp-first", action="store_true",
+                       help="build the Air 2 Pro DP-first variant with a startup grace period")
+    audio.add_argument("--dp-first-immediate", action="store_true",
+                       help="request DP audio on the first addressed-host poll (Air 2 Pro)")
     args = parser.parse_args()
     if not (args.out or args.check_only or args.verify):
         parser.error("choose one of --out, --check-only, --verify")
@@ -433,12 +445,14 @@ def main() -> None:
     verify_stock(stock)
     image = build(stock)
     verify_output(stock, image)
-    if args.dp_first:
-        image = build_dp_first(image)
-        print("=== Air 2 Pro DP-first MCU (experimental, hardware untested) ===")
+    if args.dp_first or args.dp_first_immediate:
+        image = build_dp_first(image, immediate=args.dp_first_immediate)
+        print("=== Air 2 Pro DP-first MCU ===")
+        if args.dp_first_immediate:
+            print("  direct USB host: first poll after USB addressing (experimental, hardware untested)")
         print("  startup: DP preferred once per power-up; four-second Brightness + toggles USB/DP")
-        print(f"  container CRC: 0x{DP_FIRST_CRC:08X}")
-        print(f"  sha256: {DP_FIRST_SHA256}")
+        print(f"  container CRC: 0x{head(image)['stored_crc']:08X}")
+        print(f"  sha256: {sha256(image)}")
 
     if args.verify:
         if not args.verify.exists() or args.verify.read_bytes() != image:

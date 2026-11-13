@@ -29,6 +29,7 @@ class AudioTests(unittest.TestCase):
         cls.image = build_mcu.build(cls.stock)
         build_mcu.verify_output(cls.stock, cls.image)
         cls.dp_first = build_mcu.build_dp_first(cls.image)
+        cls.immediate = build_mcu.build_dp_first(cls.image, immediate=True)
 
     def setUp(self):
         # Addresses in the trace are container offsets. All executed calls are PC-relative.
@@ -193,6 +194,42 @@ class AudioTests(unittest.TestCase):
                 self.assertEqual(self.byte(BRIDGE_STATE + 2), 0)
                 self.run_code(0x3140)
                 self.assertEqual(self.byte(SESSION), 0xA9)
+
+    def test_immediate_after_address_and_manual_usb_return(self):
+        self.cpu.mem_write(0, self.immediate)
+        self.stub_toggle_io()
+        self.cpu.mem_write(USB_ENABLED, b"\x01")
+        self.status = 0
+        self.run_code(0x3140)
+        self.assertEqual(self.byte(SESSION), 0)
+        self.assertEqual(self.byte(USB_ENABLED), 1)
+        self.cpu.mem_write(ADDRESS, struct.pack("<I", 7))
+        self.run_code(0x3140)
+        self.assertEqual(self.byte(SESSION), 0xA9)
+        self.assertEqual(self.byte(BRIDGE_STATE + 2), 1)
+        self.assertEqual(self.byte(USB_ENABLED), 0)
+        self.press_brightness_plus()
+        self.assertIn(0x12648, [addr for addr, arg in self.calls])
+        self.assertEqual(self.byte(BRIDGE_STATE + 2), 0)
+        self.calls.clear()
+        for _ in range(170):
+            self.run_code(0x3140)
+        self.assertEqual(self.calls, [])
+        self.press_brightness_plus()
+        self.assertEqual(self.byte(BRIDGE_STATE + 2), 1)
+
+    def test_immediate_keeps_no_data_fallback(self):
+        self.cpu.mem_write(0, self.immediate)
+        for _ in range(165):
+            self.run_code(0x3140)
+        self.assertEqual(self.byte(SESSION), 165)
+        self.run_code(0x3140, 0x3196)
+        self.assertEqual(self.byte(SESSION), 166)
+
+    def test_immediate_only_changes_first_poll_threshold_and_crc(self):
+        self.assertEqual([i for i, (a, b) in enumerate(zip(self.dp_first, self.immediate))
+                          if a != b], [0, 1, 2, 3, 0x1DC5A])
+        self.assertEqual(self.immediate[0x1DC5A:0x1DC5C], bytes.fromhex("012c"))
 
     def test_dp_first_early_key_consumes_pending_preference(self):
         self.cpu.mem_write(0, self.dp_first)

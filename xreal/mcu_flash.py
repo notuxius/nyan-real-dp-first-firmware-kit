@@ -151,6 +151,9 @@ KNOWN_IMAGES = {
     air2_build.DP_FIRST_SHA256.lower(): KnownImage(
         "Air 2 Pro experimental DP-first audio (hardware untested)", frozenset({"air2pro"})
     ),
+    air2_build.IMMEDIATE_DP_SHA256.lower(): KnownImage(
+        "Air 2 Pro immediate DP-first audio (hardware untested)", frozenset({"air2pro"})
+    ),
 }
 
 @dataclass(frozen=True)
@@ -548,7 +551,7 @@ def flash(image: bytes, info: ImageInfo, initial: Connection) -> None:
     try:
         version = _read_returned_app(initial, 15.0)
     except (OSError, RuntimeError):
-        if info.sha256 != air2_build.DP_FIRST_SHA256.lower():
+        if info.sha256 not in (air2_build.DP_FIRST_SHA256.lower(), air2_build.IMMEDIATE_DP_SHA256.lower()):
             raise
         print("Transfer finished. If DP audio is active, hold Brightness + for four seconds")
         print("and release to restore USB. Keep this pair connected. Waiting for APP again.")
@@ -593,6 +596,7 @@ def self_test() -> None:
     )
     assert KNOWN_IMAGES[air_build.OUTPUT_SHA256.lower()].models == frozenset({"air"})
     assert KNOWN_IMAGES[air2_build.DP_FIRST_SHA256.lower()].models == frozenset({"air2pro"})
+    assert KNOWN_IMAGES[air2_build.IMMEDIATE_DP_SHA256.lower()].models == frozenset({"air2pro"})
     assert _counts(24, 153_888) == (3664, 3665)
     assert _counts(64, 151_160) == (3598, 3599)
     assert len(cmd_build(PREPARE)) == 64
