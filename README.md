@@ -4,6 +4,17 @@
 
 *[English version](README.en.md)*
 
+## Air 2 Pro の DP 音声優先モード（実験版フォーク）
+
+この [8796n/nyan-real-firmware-kit](https://github.com/8796n/nyan-real-firmware-kit) のフォークでは、**XREAL Air 2 Pro** 用の MCU ビルドを2種類追加しました。どちらも本キットで生成した Air 2 系の DP 1140 と組み合わせて使います。USB データ接続時、`--dp-first-immediate` はホストが USB アドレスを割り当てた後の最初のポーリングで DisplayPort 音声に切り替えます。`--dp-first` は約5秒待ってから切り替えます。どちらも指定しなければ従来どおりの動作です。
+
+- **Motorola Signature** — 即時切替版を入れた1台では、接続するだけで右チャンネルの音割れが解消しました。Smart Connect は既定の「Experience Hub」を選んでいても「Mobile desktop」を起動しました。Experience Hub は手動で選べます。別の1台でも手動で DP 音声に切り替えると Mobile desktop が起動しました。
+- **ASUS の Windows PC** — 電源を切って再接続すると映像は復帰しましたが、Windows が取得した表示プロファイルには音声対応の情報がなく、メガネの再生デバイスは表示されませんでした。原因は未確認です。
+- **トラッキングと更新** — DP 音声中は USB 音声・IMU・HID 制御・VSYNC が切断されます。データ通信可能な USB 接続で **明るさ＋を4秒長押しして離す**と USB に戻せます。ASUS では MCU バージョンの読み取りと IMU の異なる32件のレポートを確認しました。アプリ内の追従動作は未確認です。
+- **画面と電源** — 切替時は画面が一時的に暗くなることがあります。手動で選んだモードは電源が切れるまで続きます。給電中のアダプターでは接続先を変えてもモードが引き継がれる場合があります。
+
+公式ファームウェアを用意して手元でビルドしてください。必要な DP イメージのハッシュと、USB 優先版に戻す手順を掲載しています。[ビルド・検証・導入・復元の手順（英語）](xreal/air2/docs/dp-first.md) · [English fork notes](README.en.md#air-2-pro-dp-first-audio-experimental-fork)
+
 メガネ向けには、パネル本来の解像度、表示モード、音声などを **nyan Real / Spatial Wall** で
 快適に使うための改修を収録しています。周辺機器向けには、実機で再現・検証した互換性修正を
 収録します。現在はXREAL Air系メガネとMOKIN UC6101B搭載ドックに対応しています。

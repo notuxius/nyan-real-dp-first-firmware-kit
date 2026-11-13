@@ -4,6 +4,19 @@ Tooling that turns official firmware for display glasses and peripherals into gu
 
 *[日本語版はこちら / Japanese version](README.md)*
 
+## Air 2 Pro DP-first audio (experimental fork)
+
+This fork of [8796n/nyan-real-firmware-kit](https://github.com/8796n/nyan-real-firmware-kit) adds two opt-in MCU builds for **XREAL Air 2 Pro**. Both use the kit’s patched Air 2-family DP 1140 image. On a direct USB data connection, `--dp-first-immediate` requests DisplayPort audio on the first poll after the host assigns a USB address. `--dp-first` allows about five seconds first. Building without either flag keeps upstream’s audio behavior.
+
+| On the immediate build | What to expect |
+|---|---|
+| Motorola Signature | On one pair, audio played through the glasses after a cold connection without the right-channel crackle or a button press. Smart Connect opened **Mobile desktop** even with **Experience Hub** set as the default. Experience Hub was still available to select manually. Switching a second pair to DP manually also launched Mobile desktop. |
+| ASUS laptop running Windows | After a cold reconnect, the picture returned but Windows offered **no glasses audio output**. Windows reported the display profile with no audio support. The cause is unresolved. |
+| Tracking and updating | DP mode disconnects USB audio, tracking, HID control and VSYNC. On a data-capable connection, hold **Brightness + for four seconds**, then release to return to USB. On the ASUS, the updater then read the MCU version and the tracking interface delivered 32 distinct sensor reports. Tracking inside a specific app remains untested. |
+| Switching hosts | The picture can briefly go dark while the display renegotiates. The manual audio choice lasts until the glasses lose power. A powered adapter can carry that choice across a host change. |
+
+Build locally from your own official firmware. The guide lists the required DP image hash, commands for both MCU variants, and how to restore USB-first behavior. [Build, verify, install and roll back](xreal/air2/docs/dp-first.md)
+
 For display glasses, the kit exposes panel resolution, display modes, and audio
 needed for **nyan Real / Spatial Wall**. For peripherals, it publishes reproducible,
 hardware-tested compatibility fixes. The current targets are XREAL Air-family

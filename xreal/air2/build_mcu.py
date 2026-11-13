@@ -449,7 +449,7 @@ def main() -> None:
         image = build_dp_first(image, immediate=args.dp_first_immediate)
         print("=== Air 2 Pro DP-first MCU ===")
         if args.dp_first_immediate:
-            print("  direct USB host: first poll after USB addressing (experimental, hardware untested)")
+            print("  direct USB host: first poll after USB addressing (experimental)")
         print("  startup: DP preferred once per power-up; four-second Brightness + toggles USB/DP")
         print(f"  container CRC: 0x{head(image)['stored_crc']:08X}")
         print(f"  sha256: {sha256(image)}")

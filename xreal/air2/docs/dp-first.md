@@ -1,6 +1,6 @@
 # Air 2 Pro DP-first audio
 
-This experimental MCU image targets a single Air 2 Pro using the kit's published Air 2-family DP 1140 build. It gives direct USB hosts an initial enumeration window, then requests DP audio once per MCU power-up. The kit's original interval is 166 polls, roughly five seconds. Actual startup and display retraining times depend on the host. The same behavior applies to the ASUS and the Motorola.
+These experimental MCU builds target the Air 2 Pro with the kit's patched Air 2-family DP 1140 image. Both request DP audio once per MCU power-up. On an addressed USB host, the immediate variant requests the switch on the first poll and the delayed variant waits about five seconds. Actual startup and display retraining times depend on the host.
 
 After DP audio starts, hold **Brightness +** for four seconds and release to select USB audio and restore the composite USB device. The IMU, HID control, VSYNC and application updater depend on that device. Reopen an app that lost its connection. Hold the same button again to return to DP audio. A cold reconnect rearms the preference. If a powered adapter keeps the MCU running through a source change, the current choice lasts for that power session. Switching to USB on a power-only connection still requires a USB data cable and host for those interfaces to work.
 
@@ -10,7 +10,7 @@ Choose `--dp-first-immediate` to request the stock DP transition on the **first 
 
 Compared with the five-second DP-first image, this revision changes one payload byte at MCU container offset `0x1DC5A` and four CRC bytes. The Thumb instruction compares the incremented addressed-host counter with 1 instead of 166. The session latch, both route checks, the four-second key, and the MCU/DP update handlers are byte-identical. The prior five-second image was successfully flashed on the first pair, and the ASUS read its MCU and DP versions after the button restored HID. Those hardware observations apply only to that earlier image.
 
-From the repository root, build or verify the immediate image offline:
+In a fresh checkout, complete the [Windows setup and baseline builds](motorola-audio.md#windows-build-and-offline-verification) first. Then run these commands from the repository root to build and verify the immediate image offline.
 
 ```powershell
 $p = '.\.venv\Scripts\python.exe'
@@ -25,11 +25,13 @@ For a one-pair upgrade from the five-second variant, keep the second pair unplug
 
 Test three cold reconnects to the Motorola with the same stereo clip, then check that one four-second hold on the ASUS restores the APP version read and actual tracking. After testing, the previous five-second behavior can be restored in APP mode using the same dry run and manual flash procedure with `air2-pro-mcu-dp-first.bin`. BOOT recovery still requires the exact official stock MCU.
 
-All 20 offline tests and both flasher self-tests passed. The immediate image matched a separate rebuild and passed the flasher's exact-image verification. Hardware startup time, audible playback, tracking and update recovery on the immediate revision still await measurement on the first pair.
+All 20 offline tests and both flasher self-tests passed. The immediate image matched a separate rebuild and passed the flasher's exact-image verification.
+
+The immediate image was flashed on one Air 2 Pro. The Motorola Signature played clean audio on a cold connection, but Smart Connect launched Mobile desktop despite the Experience Hub preference. The Hub remained selectable. The ASUS cold reconnect restored video without a Windows playback endpoint. All 128 bytes of the reported EDID extension matched the kit’s no-audio profile. After switching back to USB, the updater read the MCU version and the IMU delivered 32 distinct reports. Time to first sound, in-app tracking and bootloader recovery remain unverified.
 
 ## Build or verify on Windows
 
-Run PowerShell from the repository root. The provided checkout has the verified official inputs in `firmware/air2`, the published baseline images, and a local Python environment. In a fresh checkout, follow the [Windows environment setup and official input hash table](motorola-audio.md#windows-build-and-offline-verification) first. Keep a separate copy of the official files.
+Run PowerShell from the repository root. To prepare your official inputs, baseline images and local Python environment, follow the [Windows environment setup and official input hash table](motorola-audio.md#windows-build-and-offline-verification) first. Keep a separate copy of the official files.
 
 ```powershell
 $p = '.\.venv\Scripts\python.exe'
@@ -65,7 +67,7 @@ Use a direct PC USB data connection. Let DP settle, select USB with the four-sec
 
 To restore the preceding kit behavior when APP is reachable, select USB, dry-run `& $p xreal/mcu_flash.py --image air2-mcu.bin`, then manually run `& $p xreal/mcu_flash.py --image air2-mcu.bin --flash`. The same kit DP image serves both MCUs.
 
-If the MCU application cannot expose USB, the kit documents holding the button while connecting USB to enter BOOT. Confirm **Air 2 Pro BOOT PID 0x0431** before recovery. In BOOT the flasher allows only exact official stock. With the verified official MCU in place the manual recovery command is `& $p xreal/mcu_flash.py --restore --flash`. Once APP returns, you can restore the kit MCU or follow the [full vendor rollback instructions](../../../README.en.md#restore-official-xreal-air-family-firmware). After an interrupted transfer follow the kit's power-cycle procedure. No physical recovery or update was exercised in developing this variant.
+If the MCU application cannot expose USB, the kit documents holding the button while connecting USB to enter BOOT. Confirm **Air 2 Pro BOOT PID 0x0431** before recovery. In BOOT the flasher allows only exact official stock. With the verified official MCU in place the manual recovery command is `& $p xreal/mcu_flash.py --restore --flash`. Once APP returns, you can restore the kit MCU or follow the [full vendor rollback instructions](../../../README.en.md#restore-official-xreal-air-family-firmware). After an interrupted transfer follow the kit's power-cycle procedure. Bootloader recovery has not been exercised on the DP-first test pair.
 
 ## Implementation and verification
 
@@ -77,4 +79,4 @@ Without an assigned address the helper resumes the existing E08B eligibility che
 
 The key dispatch call at `0x0ACE0`, MCU PREPARE at `0x0DA5C` and DP PREPARE at `0x0DEA6` each latch the session and tail-call the original handler with its inputs intact. The DP-first build adds no nonvolatile write, USB identifier, audio register value or DP bridge patch.
 
-Sixteen offline tests passed, including emulated keyed DP → USB → DP, early manual override, converter fallback, refusal to toggle an existing DP route, both PREPARE paths, exact patch boundaries, model and BOOT rejection, and a simulated post-transfer USB retry. Both flasher self-tests and byte-for-byte baseline rebuilds passed. Peripheral, timing and selected callee behavior are stubbed. Audible playback, physical HID enumeration, spatial tracking, display behavior and rollback on this variant still require the one-pair trial.
+Sixteen offline tests passed, including emulated keyed DP → USB → DP, early manual override, converter fallback, refusal to toggle an existing DP route, both PREPARE paths, exact patch boundaries, model and BOOT rejection, and a simulated post-transfer USB retry. Both flasher self-tests and byte-for-byte baseline rebuilds passed. Peripheral, timing and selected callee behavior are stubbed. See the immediate-build hardware results above for the limits of physical testing.

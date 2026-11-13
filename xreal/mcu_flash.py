@@ -149,10 +149,10 @@ KNOWN_IMAGES = {
         frozenset({"air2", "air2pro"}),
     ),
     air2_build.DP_FIRST_SHA256.lower(): KnownImage(
-        "Air 2 Pro experimental DP-first audio (hardware untested)", frozenset({"air2pro"})
+        "Air 2 Pro experimental DP-first audio (five-second delay)", frozenset({"air2pro"})
     ),
     air2_build.IMMEDIATE_DP_SHA256.lower(): KnownImage(
-        "Air 2 Pro immediate DP-first audio (hardware untested)", frozenset({"air2pro"})
+        "Air 2 Pro experimental immediate DP-first audio", frozenset({"air2pro"})
     ),
 }
 
