@@ -2,6 +2,8 @@
 
 These experimental MCU builds target the Air 2 Pro with the kit's patched Air 2-family DP 1140 image. Both request DP audio once per MCU power-up. On an addressed USB host, the immediate variant requests the switch on the first poll and the delayed variant waits about five seconds. Actual startup and display retraining times depend on the host.
 
+Only the Air 2 Pro has been tested with DP-first. The flasher rejects both variants on the standard Air 2 even though it shares the Pro’s stock firmware. The original Air needs a separate port for direct USB hosts. [Model compatibility](../../../docs/README.md)
+
 After DP audio starts, hold **Brightness +** for four seconds and release to select USB audio and restore the composite USB device. The IMU, HID control, VSYNC and application updater depend on that device. Reopen an app that lost its connection. Hold the same button again to return to DP audio. A cold reconnect rearms the preference. If a powered adapter keeps the MCU running through a source change, the current choice lasts for that power session. Switching to USB on a power-only connection still requires a USB data cable and host for those interfaces to work.
 
 ## Immediate DP on a direct Motorola or ASUS connection

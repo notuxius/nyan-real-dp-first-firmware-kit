@@ -8,11 +8,15 @@ Tooling that turns official firmware for display glasses and peripherals into gu
 
 The first release of this fork adds an option to switch the glasses to **DisplayPort audio automatically after power-up**. On a direct USB connection, `--dp-first-immediate` requests the switch as soon as the host assigns a USB address and the MCU next checks the route. Choose `--dp-first` to give USB about five seconds first. Both builds use the kit’s patched Air 2-family DP 1140 image. [Upstream firmware kit](https://github.com/8796n/nyan-real-firmware-kit)
 
+### Model compatibility
+
 | Glasses | DP-first in this release |
 |---|---|
 | XREAL Air 2 Pro | Both variants are accepted by the flasher. The hardware observations below are from one pair running the immediate build. |
 | XREAL Air 2 (standard) | Shares the Pro’s stock MCU and DP images, making it a candidate for the same patch. DP-first is untested on this model and the release flasher rejects both variants for its USB product ID. |
 | XREAL Air (gen 1) | Uses different MCU and DP images. Its existing builder supports automatic DP audio on certain converters without USB data. Direct-host DP-first would require a separate gen 1 patch. |
+
+### Air 2 Pro hardware results
 
 | On the immediate build | What to expect |
 |---|---|

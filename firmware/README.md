@@ -16,7 +16,7 @@ Air（第1世代）は完全なファームウェア読み出しが不可能で�
 したがって、これらのファイルが復旧手段です。
 
 Air 2とAir 2 Proは両ファイルを共有します。1つのp55ビルドが実行時に機種別の動作を選び、
-両機種で書き込みと復旧を実機確認済みです。同じ公開出力を各機種の正確なPIDに対して受け付けます。
+両機種で書き込みと復旧を実機確認済みです。標準ビルドの出力は両機種の PID で受け付けます。DP 音声優先版は Air 2 Pro のみ実機検証済みで、書き込みも同機種に限られます。[機種別の対応状況（英語）](../docs/README.md)
 UC6101Bのビルダーはイメージ生成だけを行い、書き込み機能は含みません。
 
 ---
@@ -31,5 +31,7 @@ Air 2 / Air 2 Pro. These files are therefore your recovery path.
 
 Air 2 and Air 2 Pro share both files: one p55 build serves both and selects its
 behaviour at run time. Writing and recovery are hardware-verified on each. The
-same published modified outputs are accepted for both exact model PIDs. The
-UC6101B builder only generates an image and includes no flashing support.
+flasher accepts the baseline kit images for both models. The optional DP-first
+images are tested and accepted only on Air 2 Pro. [DP-first model compatibility](../docs/README.md)
+
+The UC6101B builder only generates an image and includes no flashing support.
