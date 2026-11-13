@@ -29,7 +29,35 @@ Test three cold reconnects to the Motorola with the same stereo clip, then check
 
 All 20 offline tests and both flasher self-tests passed. The immediate image matched a separate rebuild and passed the flasher's exact-image verification.
 
-The immediate image was flashed on one Air 2 Pro. The Motorola Signature played clean audio on a cold connection, but Smart Connect launched Mobile desktop despite the Experience Hub preference. The Hub remained selectable. The ASUS cold reconnect restored video without a Windows playback endpoint. All 128 bytes of the reported EDID extension matched the kit’s no-audio profile. After switching back to USB, the updater read the MCU version and the IMU delivered 32 distinct reports. Time to first sound, in-app tracking and bootloader recovery remain unverified.
+The immediate image was flashed on one Air 2 Pro. The Motorola Signature played clean audio on a cold connection, but Smart Connect launched Mobile desktop despite the Experience Hub preference. The Hub remained selectable. On the ASUS, switching back to USB let the updater read the MCU version and the IMU delivered 32 distinct reports. Time to first sound, in-app tracking and bootloader recovery remain unverified.
+
+## Windows DP audio troubleshooting
+
+These results are from one ASUS laptop and an Air 2 Pro running the immediate DP-first build, with the desktop mirrored to the glasses at 1080p60. The two USB-C video ports use different GPUs. In Windows **Settings → System → Display → Advanced display**, select the glasses and check which adapter drives them.
+
+### Intel Iris Xe — picture returns, playback device missing
+
+Windows had cached the no-audio EDID extension (header `02 03 0C 01`). A direct read over the DisplayPort AUX channel found that the glasses were already advertising stereo LPCM at 48 kHz (header `02 03 14 41`). Restarting the Intel graphics adapter once confirmed the diagnosis when Windows reread the EDID and created the playback device.
+
+**Fix.** In Registry Editor as administrator, set binary value `1` under `HKLM\SYSTEM\CurrentControlSet\Enum\DISPLAY\MRG3135\<Intel monitor instance>\Device Parameters\EDID_OVERRIDE`. Use the complete, checksum-valid 128-byte extension read from these glasses in DP audio mode. Value `1` replaces only the CTA extension and preserves the base display timings. On the tested laptop, the scheduled task `XREAL Air 2 Pro DP Audio` applies the same block to newly configured Intel instances of this monitor. After a cold reconnect, **Air 2 Pro (HD Audio Driver for Display Audio)** became active automatically, without a graphics adapter restart. This verified endpoint detection on Intel. The listening tests below used NVIDIA. [Microsoft’s EDID override format](https://learn.microsoft.com/en-us/windows-hardware/drivers/display/overriding-monitor-edids)
+
+For this kit DP image, the measured block starts with `02 03 14 41 23 09 04 01 83 01 00 00 65 03 0C 00 10 00 41 04`, followed by 107 zero bytes and the checksum byte `28`. To identify the registry instance, open the Air 2 Pro monitor in Device Manager and check **Details → Device instance path** and **Parent**. The tested Intel parent starts with `PCI\VEN_8086`. Create `EDID_OVERRIDE` if absent and preserve any pre-existing override. Cold-reconnect to apply the change.
+
+**Undo.** On the tested laptop, disable or remove that scheduled task first so it cannot reapply the override. Remove only the binary value `1` installed by this fix from each affected Intel Air 2 Pro instance, then cold-reconnect the glasses. If you remove the task entirely, its local script at `C:\Program Files\XREAL Air 2 Pro DP Audio\Apply-AudioProfile.ps1` can also be removed.
+
+### NVIDIA RTX 4080 Laptop GPU — playback device appears, sound clips or goes silent
+
+Use the glasses’ native EDID on this port. An early trial with the Intel workaround made Windows list a DP output even while the glasses were in USB audio mode. After removing that override, a direct hardware read on a cold reconnect confirmed the stereo DP profile and Windows created **Air 2 Pro (NVIDIA High Definition Audio)**.
+
+**Fix.** The NVIDIA High Definition Audio driver (1.4.6.6) had four-second idle timeouts on AC and battery. We observed the audio device enter D3 between streams. On the tested laptop we changed these settings in Windows.
+
+1. In Device Manager, open **Sound, video and game controllers → NVIDIA High Definition Audio → Properties → Details → Driver key**. Also copy **Device instance path** from the same Details tab.
+2. In Registry Editor as administrator, open `HKLM\SYSTEM\CurrentControlSet\Control\Class\<driver key>\PowerSettings` and record the original values. Set **PerformanceIdleTime** (AC) and **ConservationIdleTime** (battery) to four binary bytes **00 00 00 00** each. Keep **IdlePowerState** at its existing value.
+3. Run `pnputil /restart-device "<audio device instance path>"` from an elevated terminal. This restarts the audio device. The setting affects all outputs of that NVIDIA audio device and may increase idle power use. [Microsoft’s PortCls power settings](https://learn.microsoft.com/en-us/windows-hardware/drivers/audio/portcls-registry-power-settings)
+
+**Undo.** Restore both saved binary values (**04 00 00 00** for each on this ASUS) and restart the same NVIDIA audio device.
+
+**What we heard.** We unplugged at the glasses for ten seconds, reconnected to the same NVIDIA port and left the buttons alone. The listener heard both three-note groups in full across a ten-second break, then all three notes again after a minute idle. The audio device stayed in D0 during the idle check. A later cold reconnect produced a slight crackle on the middle note. On the final cold reconnect, the same three notes played cleanly from the start with the clip buffered before playback, and the player reported no underrun. The earlier test did not record underruns, so the cause of that single crackle remains open.
 
 ## Build or verify on Windows
 

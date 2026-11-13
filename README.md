@@ -21,7 +21,7 @@ The first release of this fork adds an option to switch the glasses to **Display
 | On the immediate build | What to expect |
 |---|---|
 | Motorola Signature | On one pair, audio played through the glasses after a cold connection without the right-channel crackle or a button press. Smart Connect opened **Mobile desktop** even with **Experience Hub** set as the default. Experience Hub was still available to select manually. Switching a second pair to DP manually also launched Mobile desktop. |
-| ASUS laptop running Windows | After a cold reconnect, the picture returned but Windows offered **no glasses audio output**. Windows reported the display profile with no audio support. The cause is unresolved. |
+| ASUS laptop running Windows | On the Intel port, a glasses-specific EDID override restored the DP playback device after reconnect. On the NVIDIA port, the glasses supplied their own EDID. With NVIDIA audio idle sleep disabled, the listener heard all three notes cleanly from the start on the final cold reconnect. [Windows troubleshooting and rollback](xreal/air2/docs/dp-first.md#windows-dp-audio-troubleshooting) |
 | Tracking and updating | DP mode disconnects USB audio, tracking, HID control and VSYNC. On a data-capable connection, hold **Brightness + for four seconds**, then release to return to USB. On the ASUS, the updater then read the MCU version and the tracking interface delivered 32 distinct sensor reports. Tracking inside a specific app remains untested. |
 | Switching hosts | The picture can briefly go dark while the display renegotiates. The manual audio choice lasts until the glasses lose power. A powered adapter can carry that choice across a host change. |
 
