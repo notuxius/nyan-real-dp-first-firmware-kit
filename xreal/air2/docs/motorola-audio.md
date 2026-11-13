@@ -4,6 +4,8 @@ Two pairs reportedly crackle in the right channel on a direct Motorola connectio
 
 ## One-pair trial with the installed firmware
 
+For the optional DP-first MCU, use the [one-pair installation and rollback guide](dp-first.md). The Android trial and baseline analysis below apply to the original USB-first kit build.
+
 1. Leave the second pair disconnected. Use one familiar stereo clip, the same cable and a comfortable, nonzero volume throughout. On a fresh direct Motorola connection, confirm the display is active and record which speaker crackles. If practical, check a left/right channel-identification clip as well.
 2. Hold **Brightness +** on the glasses for about four seconds, release, and let the picture return. Replay the clip. Confirm that sound comes from both glasses speakers and the right channel is clean. Unplug fully and reconnect without pressing a button. Record whether the original symptom returns. [XREAL Air 2 Pro Quick Start Guide](https://resource.xreal.com/www-xreal-com/docs/manual/XREAL_Air2Pro_Quick_Start_Guide.pdf)
 3. For a *direct, button-free* trial, record the phone's original **Developer options → Disable USB audio routing** value. If available and originally off, turn it on, fully reconnect and play the clip without pressing a button. If the phone offers media-output selection and lists the external display, try selecting it. A pass requires clean stereo **from the glasses**, a working picture and the same result on three fresh connections. Check any spatial app or host brightness control you rely on. Silence and playback from the handset both fail the test. If the option was already on when the symptom occurred, that value has already failed the direct-connection trial.
@@ -35,7 +37,7 @@ The button's route selector lives in SRAM and bridge state. The cold initializer
 
 The stock manual DP path closes the composite device. The host consequently loses USB Audio, IMU (interface 3), HID control (4) and VSYNC (5). Host-based tracking and updates through application HID depend on those interfaces. This does not establish whether an internal sensor stops sampling. A forced startup change could also close the updater's connection during a transfer. Re-enumeration time, audible results and app behavior on the Motorola need physical testing. [Kit HID protocol](../../../docs/hid-protocol.en.md)
 
-The DP bridge already supports both advertisements. Changing only the EDID leaves the MCU audio route unresolved. Skipping USB shutdown or changing clocks would require evidence of simultaneous DP-I2S, USB streaming/idle behavior and control-interface operation. The existing kit contains no validated Air 2 Pro route that provides these together. Neither unconditional DP preference nor automatic replay of the key on every host meets the requested compatibility constraints. The build and flasher therefore retain the published image set.
+The DP bridge already supports both advertisements. Changing only the EDID leaves the MCU audio route unresolved. Skipping USB shutdown or changing clocks would require evidence of simultaneous DP-I2S, USB streaming/idle behavior and control-interface operation. The optional DP-first variant provides USB functions after a manual switch back. The default build retains the original host-dependent policy.
 
 ## Windows build and offline verification
 
@@ -69,7 +71,7 @@ cmd /d /c 'set "XREAL_PID=0x0432" && .venv\Scripts\python.exe xreal\dp_flash.py 
 
 Both output files matched independent reruns byte for byte. MCU verification checked 40 guarded records and 526 changed byte positions. DP verification checked 21 records, 384 changed byte positions, bank tag `BF`, CTA contents and native/scaler/SBS display contracts. Both stock recovery files passed the Air 2 Pro flasher checks. No allowlist or PID gate changed.
 
-Eight automated tests passed. They cover USB startup selection after a previous DP selection, addressed-host latching including last-poll addressing, fallback eligibility and timeout, retry/gain/button lock, key dispatch, toggling both ways on an addressed host, corrupted image rejection, and the existing display and EDID contracts. The tests execute verified firmware instructions with peripheral I/O and selected callees stubbed. There is no DP-preferred build to certify. They do not simulate a complete boot, measure acoustics, exercise an actual device or establish that a physical replug is always a cold boot.
+Eight baseline automated tests passed. They cover USB startup selection after a previous DP selection, addressed-host latching including last-poll addressing, fallback eligibility and timeout, retry/gain/button lock, key dispatch, toggling both ways on an addressed host, corrupted image rejection, and the existing display and EDID contracts. The tests execute verified firmware instructions with peripheral I/O and selected callees stubbed. They do not simulate a complete boot, measure acoustics, exercise an actual device or establish that a physical replug is always a cold boot.
 
 ## Rollback
 

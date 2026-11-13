@@ -34,6 +34,8 @@ STOCK_CRC = 0x169B7EE4
 OUTPUT_SHA256 = "950CA9535AFBD02C40D97A167DB06ECFAEEBC35F6ADCCDED81829CC44A8BE4C9"
 OUTPUT_CRC = 0xCFB740BE
 EXPECTED_DIFFS = 526
+DP_FIRST_SHA256 = "39819E2083911E59AEA844EE484DB52DE8B5B0C9A49BD7EC317DF80F7BD521E3"
+DP_FIRST_CRC = 0x29CB1C30
 
 EXPECT_LENGTH = 0x24E70
 EXPECT_PROJECT = 0x0900
@@ -228,6 +230,47 @@ POST_RECORDS: tuple[Record, ...] = (
 ALL_RECORDS = RECORDS + POST_RECORDS
 RECORD_BYTES = sum(len(old) for _label, _offset, old, _new in ALL_RECORDS)
 
+# Thumb code in the published image's empty diagnostic slot. File offsets are
+# sufficient for the relative branches. r5 points to the existing session byte.
+DP_FIRST_HELPER = hx(
+    "d5f8e800 18b9"          # load SET_ADDRESS at [r5+0xe8], branch if addressed
+    "e7f7dffa e5f77cba"      # otherwise read E08B and resume original wait at 0314E
+    "0134 2c70 a62c 09d3"    # increment original poll counter, return below 166
+    "a920 2870"              # mark complete before calling the non-idempotent toggle
+    "0c49 8878 20b9"         # return if cached E0B8 is nonzero
+    "e6f79dfd 08b9"          # read live E0B8 (047A6), return if nonzero
+    "faf7bbfc 38bd"          # stock button toggle (185E8), original policy epilogue
+    "084a a923 1370 faf7b5bc"  # manual key: latch session, tail-call 185E8
+    "064a a923 1370 f5f7a2bb"  # MCU PREPARE: latch session, tail-call 133CC
+    "034a a923 1370 e6f7e7bb"  # DP PREPARE: latch session, tail-call 04460
+    "00bf 7a030020 48020020"   # alignment, bridge state and session byte literals
+)
+DP_FIRST_RECORDS: tuple[Record, ...] = (
+    ("addressed-host startup policy", 0x0314A, hx("02f061f8"), hx("1af07dbd")),
+    ("unaddressed host uses converter timeout", 0x0315A, hx("e81d"), hx("04e0")),
+    ("keep manual key available after converter retry", 0x0FD4E, hx("0a70"), hx("00bf")),
+    ("manual choice consumes startup preference", 0x0ACE0, hx("0df082fc"), hx("12f0c8ff")),
+    ("MCU PREPARE keeps USB active", 0x0DA5C, hx("05f0b6fc"), hx("10f00ff9")),
+    ("DP PREPARE keeps USB active", 0x0DEA6, hx("f6f7dbfa"), hx("0ff0effe")),
+    ("one-shot policy and stock handler tails", 0x1DC48, bytes(len(DP_FIRST_HELPER)), DP_FIRST_HELPER),
+)
+
+
+def build_dp_first(baseline: bytes) -> bytes:
+    """Derive the Pro-only variant from the byte-exact, already verified public build."""
+    if sha256(baseline) != OUTPUT_SHA256:
+        fail("DP-first requires the exact published MCU output")
+    out = bytearray(baseline)
+    for label, offset, old, new in DP_FIRST_RECORDS:
+        if len(old) != len(new) or out[offset:offset + len(old)] != old:
+            fail(f"DP-first guard mismatch at 0x{offset:05X}: {label}")
+        out[offset:offset + len(new)] = new
+    if fix_container_crc(out) != DP_FIRST_CRC or sha256(out) != DP_FIRST_SHA256:
+        fail("DP-first output differs from its pinned CRC or SHA-256")
+    image = bytes(out)
+    validate_container(image, "DP-first MCU")
+    return image
+
 
 def build(stock: bytes) -> bytes:
     out = bytearray(stock)
@@ -380,6 +423,8 @@ def main() -> None:
     parser.add_argument("--out", type=Path, metavar="FILE")
     parser.add_argument("--check-only", action="store_true")
     parser.add_argument("--verify", type=Path, metavar="FILE")
+    parser.add_argument("--dp-first", action="store_true",
+                        help="build the experimental Air 2 Pro DP-first audio variant")
     args = parser.parse_args()
     if not (args.out or args.check_only or args.verify):
         parser.error("choose one of --out, --check-only, --verify")
@@ -388,6 +433,12 @@ def main() -> None:
     verify_stock(stock)
     image = build(stock)
     verify_output(stock, image)
+    if args.dp_first:
+        image = build_dp_first(image)
+        print("=== Air 2 Pro DP-first MCU (experimental, hardware untested) ===")
+        print("  startup: DP preferred once per power-up; four-second Brightness + toggles USB/DP")
+        print(f"  container CRC: 0x{DP_FIRST_CRC:08X}")
+        print(f"  sha256: {DP_FIRST_SHA256}")
 
     if args.verify:
         if not args.verify.exists() or args.verify.read_bytes() != image:

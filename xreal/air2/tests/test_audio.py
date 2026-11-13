@@ -5,7 +5,9 @@ import unittest
 from pathlib import Path
 
 from unicorn import UC_ARCH_ARM, UC_HOOK_CODE, UC_MODE_THUMB, Uc
-from unicorn.arm_const import UC_ARM_REG_LR, UC_ARM_REG_PC, UC_ARM_REG_R0, UC_ARM_REG_SP
+from unicorn.arm_const import (
+    UC_ARM_REG_LR, UC_ARM_REG_PC, UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_SP,
+)
 
 from xreal.air2 import build_dp, build_mcu
 
@@ -26,6 +28,7 @@ class AudioTests(unittest.TestCase):
         build_mcu.verify_stock(cls.stock)
         cls.image = build_mcu.build(cls.stock)
         build_mcu.verify_output(cls.stock, cls.image)
+        cls.dp_first = build_mcu.build_dp_first(cls.image)
 
     def setUp(self):
         # Addresses in the trace are container offsets. All executed calls are PC-relative.
@@ -116,12 +119,15 @@ class AudioTests(unittest.TestCase):
         self.run_code(0xACA6, 0xAD0A)
         self.assertNotIn(0x185E8, [addr for addr, arg in self.calls])
 
-    def test_manual_switch_in_both_directions(self):
+    def stub_toggle_io(self):
         # Exercise the stock toggle and E0B8/B6 setters. Stub bus I/O, logging,
         # timing, amplifier and peripheral subroutines at their call boundaries.
         for addr in (0x9568, 0xB090, 0x59E0, 0x9EB0, 0x11410, 0x5A4C, 0x1E04,
                      0x5A70, 0x7C4C, 0x1EA4, 0x8618, 0x12648):
             self.stubs[addr] = lambda: 0
+
+    def test_manual_switch_in_both_directions(self):
+        self.stub_toggle_io()
         self.cpu.mem_write(USB_CONTROL, struct.pack("<I", 0x90))
         self.cpu.mem_write(USB_ENABLED, b"\x01")
         self.cpu.mem_write(ADDRESS, struct.pack("<I", 7))  # even on an enumerated host
@@ -138,6 +144,106 @@ class AudioTests(unittest.TestCase):
         self.assertEqual(self.byte(BRIDGE_STATE + 7), 0)
         usb_init = [addr for addr, arg in self.calls if addr in (0x1EA4, 0x8618, 0x12648)]
         self.assertEqual(usb_init, [0x1EA4, 0x8618, 0x12648])
+
+    def press_brightness_plus(self):
+        self.cpu.mem_write(0x20000D8A, b"\x04")
+        self.cpu.mem_write(0x20000D8C, bytes(4))
+        self.stubs[0x7C4C] = lambda: 4000 * 4
+        self.run_code(0xACA6, 0xAD0A)
+
+    def test_dp_first_addressed_startup_and_key(self):
+        self.cpu.mem_write(0, self.dp_first)
+        self.stub_toggle_io()
+        self.cpu.mem_write(ADDRESS, struct.pack("<I", 3))
+        self.cpu.mem_write(USB_ENABLED, b"\x01")
+        self.status = 0  # a direct host need not present converter E08B status
+        for _ in range(165):
+            self.run_code(0x3140)
+        self.assertEqual(self.byte(USB_ENABLED), 1)
+        self.run_code(0x3140)
+        self.assertEqual(self.byte(USB_ENABLED), 0)
+        self.assertEqual(self.byte(BRIDGE_STATE + 2), 1)
+        self.assertEqual(self.byte(SESSION), 0xA9)
+        self.press_brightness_plus()
+        self.assertIn(0x12648, [addr for addr, arg in self.calls])
+        self.assertEqual(self.byte(BRIDGE_STATE + 2), 0)
+        self.calls.clear()
+        for _ in range(170):
+            self.run_code(0x3140)
+        self.assertEqual(self.calls, [])
+        self.press_brightness_plus()
+        self.assertEqual(self.byte(BRIDGE_STATE + 2), 1)
+
+    def test_dp_first_unaddressed_and_adapter_fallback_keeps_key(self):
+        self.cpu.mem_write(0, self.dp_first)
+        self.stub_toggle_io()
+        for addr in (0xAFC8, 0x16A3A, 0x112C8, 0x1133C):
+            self.stubs[addr] = lambda: 0
+        for status in (0xA1, 0xA3):
+            with self.subTest(status=status):
+                self.status = status
+                self.cpu.mem_write(SESSION, b"\xa5")
+                self.cpu.mem_write(0x20000488, struct.pack("<I", 5))  # bridge ready
+                self.run_code(0x3140)
+                self.assertEqual(self.byte(SESSION), 0xA7)
+                self.assertEqual(self.byte(BRIDGE_STATE + 2), 1)
+                self.assertEqual(self.byte(0x20000CBD), 0)
+                self.assertEqual(self.byte(0x20000D92) & 8, 0)
+                self.press_brightness_plus()
+                self.assertEqual(self.byte(BRIDGE_STATE + 2), 0)
+                self.run_code(0x3140)
+                self.assertEqual(self.byte(SESSION), 0xA9)
+
+    def test_dp_first_early_key_consumes_pending_preference(self):
+        self.cpu.mem_write(0, self.dp_first)
+        self.stub_toggle_io()
+        self.cpu.mem_write(ADDRESS, struct.pack("<I", 7))
+        self.press_brightness_plus()
+        self.press_brightness_plus()
+        self.assertEqual(self.byte(SESSION), 0xA9)
+        self.assertEqual(self.byte(BRIDGE_STATE + 2), 0)
+        self.calls.clear()
+        self.run_code(0x3140)
+        self.assertEqual(self.calls, [])
+
+    def test_dp_first_prefers_existing_route_when_cached_or_live_dp(self):
+        self.cpu.mem_write(0, self.dp_first)
+        self.cpu.mem_write(ADDRESS, struct.pack("<I", 7))
+        for cached, live in ((1, 1), (1, 0), (0, 1), (0, 2)):
+            with self.subTest(cached=cached, live=live):
+                self.cpu.mem_write(SESSION, b"\xa5")
+                self.cpu.mem_write(BRIDGE_STATE + 2, bytes([cached]))
+                self.stubs[0x47A6] = lambda: live
+                self.run_code(0x3140)
+                self.assertEqual(self.byte(SESSION), 0xA9)
+                self.assertEqual(self.byte(BRIDGE_STATE + 2), cached)
+
+    def test_dp_first_prepare_preserves_usb_and_stock_arguments(self):
+        self.cpu.mem_write(0, self.dp_first)
+        for op, target in ((62, 0x133CC), (110, 0x4460)):
+            with self.subTest(op=op):
+                self.cpu.mem_write(SESSION, b"\xa5")
+                self.cpu.reg_write(UC_ARM_REG_R0, op)
+                self.cpu.reg_write(UC_ARM_REG_R1, 0x20001000)
+                self.cpu.reg_write(UC_ARM_REG_R2, 0x20001100)
+                self.run_code(0xD84C, target)
+                self.assertEqual(self.cpu.reg_read(UC_ARM_REG_R0), 0x20001000)
+                self.assertEqual(self.cpu.reg_read(UC_ARM_REG_R1), 0x20001100)
+                self.assertEqual(self.byte(SESSION), 0xA9)
+                self.run_code(0x3140)
+                self.assertEqual(self.calls, [])
+
+    def test_dp_first_changes_only_crc_and_guarded_bytes(self):
+        expected = bytearray(self.image)
+        for _, offset, old, new in build_mcu.DP_FIRST_RECORDS:
+            self.assertEqual(expected[offset:offset + len(old)], old)
+            expected[offset:offset + len(old)] = new
+        expected[:4] = self.dp_first[:4]
+        self.assertEqual(expected, self.dp_first)
+        self.assertEqual(sum(a != b for a, b in zip(self.image, self.dp_first)), 101)
+        self.assertEqual(sum(a != b for a, b in zip(self.stock, self.dp_first)), 619)
+        with self.assertRaisesRegex(SystemExit, "exact published MCU"):
+            build_mcu.build_dp_first(self.stock)
 
     def test_crc_and_patch_guards(self):
         damaged = bytearray(self.stock)

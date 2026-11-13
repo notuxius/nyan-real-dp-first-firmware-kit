@@ -148,6 +148,9 @@ KNOWN_IMAGES = {
         "Air 2 / Air 2 Pro public target-converter output",
         frozenset({"air2", "air2pro"}),
     ),
+    air2_build.DP_FIRST_SHA256.lower(): KnownImage(
+        "Air 2 Pro experimental DP-first audio (hardware untested)", frozenset({"air2pro"})
+    ),
 }
 
 @dataclass(frozen=True)
@@ -542,19 +545,33 @@ def flash(image: bytes, info: ImageInfo, initial: Connection) -> None:
         _transfer_from_boot(boot, image, info)
 
     print(f"\n=== WAIT FOR {model.name.upper()} APP ===")
-    app_state = wait_for(model, model.app_pid, 15.0)
-    time.sleep(0.3)
-    app = _open(app_state)
     try:
-        version = app.app_version()
-    finally:
-        app.close()
+        version = _read_returned_app(initial, 15.0)
+    except (OSError, RuntimeError):
+        if info.sha256 != air2_build.DP_FIRST_SHA256.lower():
+            raise
+        print("Transfer finished. If DP audio is active, hold Brightness + for four seconds")
+        print("and release to restore USB. Keep this pair connected. Waiting for APP again.")
+        version = _read_returned_app(initial, 60.0)
     if version != model.version:
         raise RuntimeError(
             f"APP returned but op38 version is {version!r}, expected {model.version!r}"
         )
     print(f"  APP PID 0x{model.app_pid:04X} returned; op38 version={version!r}")
     print("  Note: stock and public modified outputs intentionally share this version.")
+
+
+def _read_returned_app(initial: Connection, timeout: float) -> str:
+    model = initial.model
+    app_state = wait_for(model, model.app_pid, timeout)
+    if initial.mode == "APP" and initial.serial and app_state.serial != initial.serial:
+        raise ValueError("the returning APP serial does not match the original glasses")
+    time.sleep(0.3)
+    app = _open(app_state)
+    try:
+        return app.app_version()
+    finally:
+        app.close()
 
 
 def _validate_stock_recovery(model: Model) -> None:
@@ -575,6 +592,7 @@ def self_test() -> None:
         {"air2", "air2pro"}
     )
     assert KNOWN_IMAGES[air_build.OUTPUT_SHA256.lower()].models == frozenset({"air"})
+    assert KNOWN_IMAGES[air2_build.DP_FIRST_SHA256.lower()].models == frozenset({"air2pro"})
     assert _counts(24, 153_888) == (3664, 3665)
     assert _counts(64, 151_160) == (3598, 3599)
     assert len(cmd_build(PREPARE)) == 64
