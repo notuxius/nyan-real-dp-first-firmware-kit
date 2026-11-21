@@ -1,12 +1,12 @@
-# nyan Real / Firmware Kit
+# XREAL Firmware Tools
 
-Tooling that turns official firmware for display glasses and peripherals into guarded, locally built images.
+Unofficial firmware builders, flashers, and display and audio diagnostics for XREAL Air-series glasses and select accessories. Bring your own stock firmware.
 
 *[日本語版はこちら / Japanese version](README.ja.md)*
 
 ## DP-first audio (experimental)
 
-The first release of this fork adds an option to switch the glasses to **DisplayPort audio automatically after power-up**. On a direct USB connection, `--dp-first-immediate` requests the switch as soon as the host assigns a USB address and the MCU next checks the route. Choose `--dp-first` to give USB about five seconds first. Both builds use the kit’s patched Air 2-family DP 1140 image. [Upstream firmware kit](https://github.com/8796n/nyan-real-firmware-kit)
+This fork adds an option to switch the glasses to **DisplayPort audio automatically after power-up**. On a direct USB connection, `--dp-first-immediate` requests the switch as soon as the host assigns a USB address and the MCU next checks the route. Choose `--dp-first` to give USB about five seconds first. Both builds use the kit’s patched Air 2-family DP 1140 image.
 
 ### Model compatibility
 
@@ -58,18 +58,11 @@ powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\xreal\air2\setup
 
 Setup saves the original settings per device in `HKLM\SOFTWARE\XREAL-Air2Pro-DP-Audio` before editing them. Repeat runs preserve that backup. Undo restores the saved bytes and removes values that were originally absent. Settings already in place before the first run remain yours to manage. [Manual settings and hardware test results](xreal/air2/docs/dp-first.md#windows-dp-audio-troubleshooting)
 
-## About the upstream kit
+## Project scope
 
-For display glasses, the kit exposes panel resolution, display modes, and audio
-needed for **nyan Real / Spatial Wall**. For peripherals, it publishes reproducible,
-hardware-tested compatibility fixes. The current targets are XREAL Air-family
-glasses and a MOKIN UC6101B dock. Each builder is useful on its own even without
-Spatial Wall.
-
-> **nyan Real / Spatial Wall** is an application for using display glasses as a
-> spatial display, on Windows, macOS, GNOME and Raspberry Pi. Only its manual is
-> published so far; the application itself is not yet available.
-> → [nyan-real-spatial-wall](https://github.com/8796n/nyan-real-spatial-wall)
+The kit enables native panel resolutions, additional display modes, and audio
+options on XREAL Air-family glasses. It also provides a reproducible compatibility
+fix for docks based on the MOKIN UC6101B. See [NOTICE](NOTICE) for upstream attribution.
 
 **This project is not affiliated with, endorsed by, or connected to XREAL
 (formerly Nreal), Rokid, MOKIN, or any other manufacturer.** Product and brand names are

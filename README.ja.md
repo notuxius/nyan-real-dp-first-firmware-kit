@@ -1,12 +1,12 @@
-# nyan Real / Firmware Kit
+# XREAL Firmware Tools
 
-メガネ型ディスプレイや周辺機器の公式ファームウェアを、手元で検証付きイメージへ改修するツール。
+XREAL Air シリーズのメガネと一部の周辺機器向けの非公式ツールです。ファームウェアのビルド・書き込みと、映像・音声の診断に対応します。公式ファームウェアは各自で用意してください。
 
 *[English version](README.md)*
 
 ## DP 音声優先モード（実験版）
 
-この [8796n/nyan-real-firmware-kit](https://github.com/8796n/nyan-real-firmware-kit) のフォークでは、**XREAL Air 2 Pro** 用の MCU ビルドを2種類追加しました。どちらも本キットで生成した Air 2 系の DP 1140 と組み合わせて使います。USB データ接続時、`--dp-first-immediate` はホストが USB アドレスを割り当てた後の最初のポーリングで DisplayPort 音声に切り替えます。`--dp-first` は約5秒待ってから切り替えます。どちらも指定しなければ従来どおりの動作です。
+このフォークでは、**XREAL Air 2 Pro** 用の MCU ビルドを2種類追加しました。どちらも本キットで生成した Air 2 系の DP 1140 と組み合わせて使います。USB データ接続時、`--dp-first-immediate` はホストが USB アドレスを割り当てた後の最初のポーリングで DisplayPort 音声に切り替えます。`--dp-first` は約5秒待ってから切り替えます。どちらも指定しなければ従来どおりの動作です。
 
 | 機種 | このリリースの DP 音声優先モード |
 |---|---|
@@ -21,16 +21,10 @@
 
 公式ファームウェアを用意して手元でビルドしてください。必要な DP イメージのハッシュと、USB 優先版に戻す手順を掲載しています。[ビルド・検証・導入・復元の手順（英語）](xreal/air2/docs/dp-first.md) · [English fork notes](README.md#dp-first-audio-experimental)
 
-## 元のキットについて
+## 対応機器と機能
 
-メガネ向けには、パネル本来の解像度、表示モード、音声などを **nyan Real / Spatial Wall** で
-快適に使うための改修を収録しています。周辺機器向けには、実機で再現・検証した互換性修正を
-収録します。現在はXREAL Air系メガネとMOKIN UC6101B搭載ドックに対応しています。
-Spatial Wallを使わない場合でも各ビルダーは単体で利用できます。
-
-> **nyan Real / Spatial Wall** は電気メガネで空間ディスプレイを扱うためのアプリケーションです
-> （Windows / macOS / GNOME / Raspberry Pi）。現在はマニュアルのみ先行公開で、本体は未公開です。
-> → [nyan-real-spatial-wall](https://github.com/8796n/nyan-real-spatial-wall)
+XREAL Air シリーズのメガネ向けに、パネル本来の解像度、追加の表示モード、音声切り替えなどに対応する改修を収録しています。
+MOKIN UC6101B 搭載ドック向けには、再現可能な互換性修正を提供します。元のプロジェクトの著作権表記は [NOTICE](NOTICE) を参照してください。
 
 **本プロジェクトは XREAL（旧 Nreal）、Rokid、MOKINをはじめとするいかなるメーカーとも関係がなく、
 承認も後援も受けていません。** 各社の製品名・ブランド名は、このツールが対象とする
