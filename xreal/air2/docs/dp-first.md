@@ -65,6 +65,28 @@ $dp = Join-Path $out 'air2-pro-dp-beam-audio-switch.bin'
 
 To return to the immediate DP-first baseline, select USB on the PC and flash the [immediate DP-first MCU](#immediate-dp-on-a-direct-motorola-or-asus-connection) first. Select USB again if needed, then restore the standard kit `air2-dp.bin`. If APP mode is unavailable, follow [stock recovery](#future-updates-and-rollback).
 
+## Beam 3D with a VITURE hub
+
+On November 21, 2026, two Air 2 Pro pairs shared VLC playback from the original Beam through a VITURE hub. After a two-second **Brightness +** hold on the first pair, it showed 3D and the second pair still had sound but showed picture only in its right eyepiece. Switching the second pair to 3D restored its left eyepiece. Both pairs then had full 3D picture and DP audio.
+
+With one pair on the hub, USB audio was silent. Selecting DP audio while the glasses were already in 3D restored sound, and sound continued when the glasses returned to 2D.
+
+VLC startup audio varied between runs. In one run with both pairs already in 3D, the first pair crackled and the second stayed silent. In an earlier run both pairs were silent until the movie was reopened. In another run, the movie initially played cleanly and sounded distorted after returning through an alternate launcher and reopening it. Which pairs distorted in that last run and whether the launcher contributed remain open.
+
+### What wireless ADB showed
+
+- `dumpsys display` reported one physical display at **3840 × 1080, 60 Hz** on the Beam side of the hub while VLC was playing.
+- The live host-device list in `dumpsys usb` showed only the **Synaptics VMM7100** bridge (`06cb:7100`). The second pair stayed absent when switched to USB audio and was silent in that mode. Android listed no USB audio output for either pair.
+- VLC had an active audio track. Android labeled its output `Speaker`. Audibility in the two pairs and the effect of the local DP audio selection were checked by listening.
+
+The Beam has no USB control path to either pair in this setup. Offline inspection of the stock DP 1140 image found that its incoming timing detector sets register `E086` to 0 for 1920 × 1080 and 1 for 3840 × 1080. That could let the second pair follow the video timing in firmware. The next hardware check is to measure the second pair's incoming timing while it stays in 2D and only the first pair switches. Automatic following remains untested.
+
+## Other recent Beam observations
+
+- **Sound after switching to 3D.** In a one-pair test, the Beam trained a 3840 × 1080, 60 Hz DisplayPort link. While the glasses were silent, VLC's track stayed active and the AudioFlinger output continued to advance with nonzero signal power. With Keepalive off, pausing for about four seconds let the audio output enter standby. Sound returned on resume, and the same pause-and-resume sequence preserved audible playback on return to 2D. The trace did not determine where audio stopped after the Android mixer.
+- **Clicks around standby.** One experimental same-rate resume run played the full first test beep. The wearer still heard clicks before and after playback. One restart still had a 474 ms sampled amplifier clock interruption while the bridge's I²S pins were disabled. Four candidate receiver mute bits stayed clear across two captures, leaving the actual DisplayPort AudioMute flag unmeasured.
+- **Stock Home after switching to USB.** On Beam OS 384 with Keepalive 1.33, restoring the DisplayPort retrain during the DP-to-USB transition still left stock Home black. NRSDK reported that it could not obtain the Android surface.
+
 ## Windows DP audio troubleshooting
 
 These results are from one ASUS laptop and an Air 2 Pro running the immediate DP-first build, with the desktop mirrored to the glasses at 1080p60. The two USB-C video ports use different GPUs. In Windows **Settings → System → Display → Advanced display**, select the glasses and check which adapter drives them.

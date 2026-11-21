@@ -39,6 +39,10 @@ The stock manual DP path closes the composite device. The host consequently lose
 
 The DP bridge already supports both advertisements. Changing only the EDID leaves the MCU audio route unresolved. Skipping USB shutdown or changing clocks would require evidence of simultaneous DP-I2S, USB streaming/idle behavior and control-interface operation. The optional DP-first variant provides USB functions after a manual switch back. The default build retains the original host-dependent policy.
 
+### Brightness + hold tones
+
+An offline check of the stock `09.1.00.180_20240507` MCU and the immediate DP-first image produced the same result. The two- and four-second **Brightness +** thresholds advanced in both USB and DP audio modes. The hold handlers requested the same embedded tone in USB mode and skipped the request in DP mode. The tone uses the MCU's audio path, which the stock DP transition disables. This explains how the hold can register without a tone in DP audio. For playback tests on the original Beam, see [Beam 3D with a VITURE hub](dp-first.md#beam-3d-with-a-viture-hub).
+
 ## Windows build and offline verification
 
 From the cloned repository root in PowerShell, use Python 3.13. Keep the exact official files at the two input paths below and keep a separate original copy. The image builders use the standard library. The tests additionally use Unicorn to execute the Thumb instructions under test. These commands build and inspect only the **existing published pair**.

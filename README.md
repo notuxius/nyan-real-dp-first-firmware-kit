@@ -32,6 +32,10 @@ Build locally from your own official firmware. The guide lists the required DP i
 
 The opt-in Air 2 Pro Beam build starts in DP audio. Hold **Brightness +** for four seconds to select USB audio or **Brightness −** for four seconds to select DP. The paired MCU and DP bridge images were tested on one Air 2 Pro with the original Beam running OS 384. Stock Beam Home can still stay black when entering USB. The original immediate DP-first build remains available. [Build, install and roll back the Beam pair](xreal/air2/docs/dp-first.md#beam-audio-switching)
 
+### Two pairs on the Beam through a VITURE hub
+
+Two Air 2 Pro pairs showed full 3D and played DP audio after each pair was switched to 3D. While only the first pair was in 3D, the second pair's left eyepiece was black. The Beam saw the hub's USB bridge alone. Each pair currently needs its own two-second **Brightness +** press. [Playback and wireless ADB results](xreal/air2/docs/dp-first.md#beam-3d-with-a-viture-hub)
+
 ### Intel USB-C black screen on reconnect
 
 With the second Air 2 Pro on the Intel port, Windows reported a 1920 × 1080, 60 Hz mirror even with the external monitor disconnected. A direct read from the glasses showed that all four DisplayPort lanes lacked signal lock. Switching to USB audio with **Brightness +** restored USB controls, but the picture stayed black.
