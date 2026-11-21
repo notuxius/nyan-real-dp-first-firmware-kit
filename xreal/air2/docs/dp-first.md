@@ -31,6 +31,40 @@ All 20 offline tests and both flasher self-tests passed. The immediate image mat
 
 The immediate image was flashed on one Air 2 Pro. The Motorola Signature played clean audio on a cold connection, but Smart Connect launched Mobile desktop despite the Experience Hub preference. The Hub remained selectable. On the ASUS, switching back to USB let the updater read the MCU version and the IMU delivered 32 distinct reports. Time to first sound, in-app tracking and bootloader recovery remain unverified.
 
+## Beam audio switching
+
+This opt-in build is for **Air 2 Pro on the original XREAL Beam**. It retains immediate DP-first startup. Hold **Brightness + for four seconds** to select USB audio or **Brightness − for four seconds** to select DP audio. The brightness rocker still handles short presses. The build skips the usual DP link retrain during either route change. Its bridge advertises stereo LPCM on both routes, so a PC can list both USB and DP audio outputs in USB mode.
+
+On one Air 2 Pro with Beam OS 384, DP → USB kept the picture and restored audio in the same VLC task during a no-retrain test. With the cover handshake and Keepalive 1.33, Just Player returned paused after USB → DP. EVA can still take focus, and stock Home sometimes stays black when entering USB. A **Brightness −** hold restored Home in DP in one such test.
+
+The OLED and USB handoffs wait up to three seconds for a matching Beam Audio Keepalive acknowledgement. Without it, the firmware continues at timeout. The public Keepalive 1.13 release lacks the cover handshake. The cover tests used local Keepalive 1.33 and 1.34 builds. [Beam Audio Keepalive releases](https://github.com/notuxius/beam-audio-keepalive/releases)
+
+### Build and install the Beam pair
+
+Use the [official inputs and Windows Python environment](motorola-audio.md#windows-build-and-offline-verification). Run this from the repository root. Choose a new output directory if you already have files with these names.
+
+```powershell
+$p = '.\.venv\Scripts\python.exe'
+$out = 'build/beam-audio'
+New-Item -ItemType Directory -Force -Path $out | Out-Null
+& $p -m xreal.air2.build_beam_cover_handoff --mcu-stock firmware/air2/09.1.00.180_20240507.bin --dp-stock firmware/air2/1140 --out-dir $out
+$mcu = Join-Path $out 'air2-pro-mcu-beam-cover-handoff-both-ways.bin'
+$dp = Join-Path $out 'air2-pro-dp-beam-audio-switch.bin'
+& $p xreal/mcu_flash.py --image $mcu --verify-only
+```
+
+| Output | SHA-256 |
+|---|---|
+| Beam MCU | `FC2DB30439E9F2E0FA13B3B84A2CCA9045C8BD24E45E470BB57BFC36A07C6743` |
+| Beam DP bridge | `562BEFE8493229E6D57B31A601BF1AEAE4EA19095B7D53B29AFBF0A9AC4CE2F5` |
+
+1. Connect one Air 2 Pro directly to the PC and select USB audio. Keep the verified stock inputs for recovery.
+2. Dry-run both flashers with `& $p xreal/dp_flash.py --image $dp` and `& $p xreal/mcu_flash.py --image $mcu`. Confirm Air 2 Pro APP PID `0x0432` and the respective hashes above.
+3. When ready to write, run the DP command with `--flash` first and let its post-check complete. Then run the MCU command with `--flash`. If the MCU flasher asks for USB after transfer, hold **Brightness +** for four seconds while keeping the cable attached.
+4. On the Beam, verify picture and audible stereo on a cold DP start. Check both button directions with the player paused before trying them mid-playback.
+
+To return to the immediate DP-first baseline, select USB on the PC and flash the [immediate DP-first MCU](#immediate-dp-on-a-direct-motorola-or-asus-connection) first. Select USB again if needed, then restore the standard kit `air2-dp.bin`. If APP mode is unavailable, follow [stock recovery](#future-updates-and-rollback).
+
 ## Windows DP audio troubleshooting
 
 These results are from one ASUS laptop and an Air 2 Pro running the immediate DP-first build, with the desktop mirrored to the glasses at 1080p60. The two USB-C video ports use different GPUs. In Windows **Settings → System → Display → Advanced display**, select the glasses and check which adapter drives them.

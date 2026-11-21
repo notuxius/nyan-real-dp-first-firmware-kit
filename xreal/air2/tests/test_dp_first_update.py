@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from xreal import mcu_flash
+from xreal.air2 import build_beam_cover_handoff
 
 
 class UpdateTests(unittest.TestCase):
@@ -20,6 +21,13 @@ class UpdateTests(unittest.TestCase):
 
     def test_immediate_dp_retry_only_app_check_after_completed_transfer(self):
         image = mcu_flash.air2_build.build_dp_first(self.baseline, immediate=True)
+        info = mcu_flash.check_image(image)
+        self.assertEqual(info.models, {"air2pro"})
+        self.check_app_retry(image, info)
+
+    def test_beam_audio_switching_retry_only_app_check_after_completed_transfer(self):
+        stock = self.app.model.stock
+        image, _ = build_beam_cover_handoff.build_pair(stock.read_bytes(), stock.with_name("1140").read_bytes())
         info = mcu_flash.check_image(image)
         self.assertEqual(info.models, {"air2pro"})
         self.check_app_retry(image, info)
